@@ -101,7 +101,7 @@ func main() {
 	})
 
 	// Routes
-	api.SetupRoutes(app, s, authSvc, q, hub)
+	api.SetupRoutes(app, s, authSvc, q, hub, rdb)
 
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {

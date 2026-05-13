@@ -1,7 +1,10 @@
 package api
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/redis/go-redis/v9"
 	"webhook-service/internal/api/handlers"
 	"webhook-service/internal/api/middleware"
 	"webhook-service/internal/api/ws"
@@ -10,7 +13,7 @@ import (
 	"webhook-service/internal/store"
 )
 
-func SetupRoutes(app *fiber.App, s *store.Store, authSvc *auth.AuthService, q *queue.Queue, hub *ws.Hub) {
+func SetupRoutes(app *fiber.App, s *store.Store, authSvc *auth.AuthService, q *queue.Queue, hub *ws.Hub, rdb *redis.Client) {
 	// Initialize handlers
 	authH := handlers.NewAuthHandler(s, authSvc)
 	userH := handlers.NewUserHandler(s, authSvc)
@@ -31,8 +34,11 @@ func SetupRoutes(app *fiber.App, s *store.Store, authSvc *auth.AuthService, q *q
 	api.Post("/auth/refresh", authH.RefreshToken)
 	api.Post("/auth/forgot-password", authH.ForgotPassword)
 
-	// Protected routes (JWT or API Key)
-	protected := api.Group("", middleware.AuthMiddleware(authSvc, s))
+	// Protected routes (JWT or API Key) with per-tenant rate limiting
+	protected := api.Group("",
+		middleware.AuthMiddleware(authSvc, s),
+		middleware.TenantRateLimitMiddleware(rdb, 500, time.Minute),
+	)
 
 	// User
 	protected.Get("/users/me", authH.GetCurrentUser)
