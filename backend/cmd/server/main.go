@@ -10,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
@@ -87,6 +88,13 @@ func main() {
 	app.Use(recover.New())
 	app.Use(middleware.CorsMiddleware(cfg.FrontendURL))
 	app.Use(middleware.LoggerMiddleware(logger))
+	app.Use(middleware.PrometheusMiddleware())
+
+	// Prometheus metrics endpoint
+	app.Get("/metrics", func(c *fiber.Ctx) error {
+		promhttp.Handler().ServeHTTP(c.Context(), nil)
+		return nil
+	})
 
 	// Routes
 	api.SetupRoutes(app, s, authSvc, q)

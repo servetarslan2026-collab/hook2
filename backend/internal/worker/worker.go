@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+	"webhook-service/internal/api/middleware"
 	"webhook-service/internal/queue"
 	"webhook-service/internal/store"
 )
@@ -114,6 +115,7 @@ func (w *Worker) processDelivery(ctx context.Context, job *queue.WebhookJob) err
 	// Success: 2xx
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		w.store.CreateDeliveryAttempt(ctx, job.EventID, job.SubscriptionID, "success", resp.StatusCode, string(payload), string(respBody), duration, job.AttemptNumber)
+		middleware.IncWebhookDelivery("success")
 		w.logger.Info("Webhook delivered",
 			zap.String("event_id", job.EventID.String()),
 			zap.Int("status", resp.StatusCode),
@@ -124,6 +126,7 @@ func (w *Worker) processDelivery(ctx context.Context, job *queue.WebhookJob) err
 
 	// Non-2xx: failure
 	w.store.CreateDeliveryAttempt(ctx, job.EventID, job.SubscriptionID, "failed", resp.StatusCode, string(payload), string(respBody), duration, job.AttemptNumber)
+	middleware.IncWebhookDelivery("failed")
 	return w.handleFailure(ctx, job, resp.StatusCode, string(respBody), fmt.Errorf("status %d", resp.StatusCode))
 }
 
@@ -160,6 +163,7 @@ func (w *Worker) handleFailure(ctx context.Context, job *queue.WebhookJob, statu
 	)
 
 	w.store.CreateDeliveryAttempt(ctx, job.EventID, job.SubscriptionID, "dead_letter", statusCode, "", respBody, 0, job.AttemptNumber)
+	middleware.IncWebhookDelivery("dead_letter")
 	return w.queue.PublishDLQ(ctx, job)
 }
 
