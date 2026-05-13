@@ -147,6 +147,8 @@ export const orgApi = {
     api.post(`organizations/${id}/members`, { json: data }).json(),
   removeMember: (orgId: string, userId: string) =>
     api.delete(`organizations/${orgId}/members/${userId}`).json(),
+  acceptInvitation: (token: string) =>
+    api.post(`invitations/${token}/accept`).json<any>(),
 };
 
 export const appApi = {
@@ -161,7 +163,8 @@ export const appApi = {
 };
 
 export const secretApi = {
-  list: (appId: string) => api.get(`applications/${appId}/secrets`).json<ApplicationSecret[]>(),
+  list: (appId: string, params?: { page?: number; per_page?: number }) =>
+    api.get(`applications/${appId}/secrets`, { searchParams: params as any }).json<PaginatedResponse<ApplicationSecret>>(),
   create: (appId: string, data: { name: string }) =>
     api.post(`applications/${appId}/secrets`, { json: data }).json<ApplicationSecret>(),
   delete: (appId: string, secretId: string) =>
@@ -169,7 +172,8 @@ export const secretApi = {
 };
 
 export const eventTypeApi = {
-  list: (appId: string) => api.get(`applications/${appId}/event-types`).json<EventType[]>(),
+  list: (appId: string, params?: { page?: number; per_page?: number }) =>
+    api.get(`applications/${appId}/event-types`, { searchParams: params as any }).json<PaginatedResponse<EventType>>(),
   create: (appId: string, data: { name: string; description: string; schema?: object }) =>
     api.post(`applications/${appId}/event-types`, { json: data }).json<EventType>(),
   delete: (appId: string, etId: string) =>
@@ -177,7 +181,8 @@ export const eventTypeApi = {
 };
 
 export const subscriptionApi = {
-  list: (appId: string) => api.get(`applications/${appId}/subscriptions`).json<Subscription[]>(),
+  list: (appId: string, params?: { page?: number; per_page?: number }) =>
+    api.get(`applications/${appId}/subscriptions`, { searchParams: params as any }).json<PaginatedResponse<Subscription>>(),
   get: (id: string) => api.get(`subscriptions/${id}`).json<Subscription>(),
   create: (appId: string, data: { event_types: string[]; target_url: string; description: string }) =>
     api.post(`applications/${appId}/subscriptions`, { json: data }).json<Subscription>(),

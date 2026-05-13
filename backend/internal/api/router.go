@@ -52,6 +52,9 @@ func SetupRoutes(app *fiber.App, s *store.Store, authSvc *auth.AuthService, q *q
 	protected.Post("/organizations/:id/members", orgH.InviteMember)
 	protected.Delete("/organizations/:id/members/:userId", orgH.RemoveMember)
 
+	// Accept invitation
+	protected.Post("/invitations/:token/accept", orgH.AcceptInvitation)
+
 	// Applications
 	protected.Post("/organizations/:id/applications", appH.Create)
 	protected.Get("/organizations/:id/applications", appH.List)

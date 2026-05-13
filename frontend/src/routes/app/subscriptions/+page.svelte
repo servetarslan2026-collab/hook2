@@ -2,9 +2,11 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { currentAppId } from '$lib/stores/app';
-  import type { Subscription } from '$lib/api/client';
+  import type { Subscription, PaginatedResponse } from '$lib/api/client';
 
   let subscriptions = $state<Subscription[]>([]);
+  let total = $state(0);
+  let currentPage = $state(1);
   let loading = $state(true);
   let appId = $state<string | null>(null);
 
@@ -12,15 +14,24 @@
 
   onMount(async () => {
     if (!appId) { goto('/'); return; }
+    await loadSubscriptions();
+  });
+
+  async function loadSubscriptions(page = 1) {
+    if (!appId) return;
+    loading = true;
     try {
       const { subscriptionApi } = await import('$lib/api/client');
-      subscriptions = await subscriptionApi.list(appId);
+      const result = await subscriptionApi.list(appId, { page, per_page: 20 });
+      subscriptions = result.data;
+      total = result.total;
+      currentPage = page;
     } catch (e) {
       console.error(e);
     } finally {
       loading = false;
     }
-  });
+  }
 
   async function toggleSubscription(sub: Subscription) {
     try {
@@ -38,6 +49,7 @@
       const { subscriptionApi } = await import('$lib/api/client');
       await subscriptionApi.delete(id);
       subscriptions = subscriptions.filter(s => s.id !== id);
+      total--;
     } catch (e) {
       console.error(e);
     }
@@ -105,5 +117,22 @@
         </div>
       {/each}
     </div>
+
+    <!-- Pagination -->
+    {#if total > 20}
+      <div class="flex items-center justify-between mt-6">
+        <p class="text-sm" style="color: var(--text-muted);">Showing {(currentPage - 1) * 20 + 1}-{Math.min(currentPage * 20, total)} of {total}</p>
+        <div class="flex gap-2">
+          <button onclick={() => loadSubscriptions(currentPage - 1)} disabled={currentPage === 1}
+            class="px-3 py-1 rounded text-sm border disabled:opacity-50" style="border-color: var(--border);">
+            Previous
+          </button>
+          <button onclick={() => loadSubscriptions(currentPage + 1)} disabled={currentPage * 20 >= total}
+            class="px-3 py-1 rounded text-sm border disabled:opacity-50" style="border-color: var(--border);">
+            Next
+          </button>
+        </div>
+      </div>
+    {/if}
   {/if}
 </div>

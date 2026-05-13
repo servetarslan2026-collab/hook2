@@ -2,9 +2,11 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { currentAppId } from '$lib/stores/app';
-  import type { EventType } from '$lib/api/client';
+  import type { EventType, PaginatedResponse } from '$lib/api/client';
 
   let eventTypes = $state<EventType[]>([]);
+  let total = $state(0);
+  let currentPage = $state(1);
   let loading = $state(true);
   let newName = $state('');
   let newDescription = $state('');
@@ -18,10 +20,15 @@
     await loadEventTypes();
   });
 
-  async function loadEventTypes() {
+  async function loadEventTypes(page = 1) {
+    if (!appId) return;
+    loading = true;
     try {
       const { eventTypeApi } = await import('$lib/api/client');
-      eventTypes = await eventTypeApi.list(appId!);
+      const result = await eventTypeApi.list(appId, { page, per_page: 20 });
+      eventTypes = result.data;
+      total = result.total;
+      currentPage = page;
     } catch (e) {
       console.error(e);
     } finally {
@@ -36,6 +43,7 @@
       const { eventTypeApi } = await import('$lib/api/client');
       const et = await eventTypeApi.create(appId, { name: newName, description: newDescription });
       eventTypes = [...eventTypes, et];
+      total++;
       newName = '';
       newDescription = '';
     } catch (e: any) {
@@ -51,6 +59,7 @@
       const { eventTypeApi } = await import('$lib/api/client');
       await eventTypeApi.delete(appId, id);
       eventTypes = eventTypes.filter(et => et.id !== id);
+      total--;
     } catch (e) {
       console.error(e);
     }
@@ -115,5 +124,22 @@
         </div>
       {/each}
     </div>
+
+    <!-- Pagination -->
+    {#if total > 20}
+      <div class="flex items-center justify-between mt-6">
+        <p class="text-sm" style="color: var(--text-muted);">Showing {(currentPage - 1) * 20 + 1}-{Math.min(currentPage * 20, total)} of {total}</p>
+        <div class="flex gap-2">
+          <button onclick={() => loadEventTypes(currentPage - 1)} disabled={currentPage === 1}
+            class="px-3 py-1 rounded text-sm border disabled:opacity-50" style="border-color: var(--border);">
+            Previous
+          </button>
+          <button onclick={() => loadEventTypes(currentPage + 1)} disabled={currentPage * 20 >= total}
+            class="px-3 py-1 rounded text-sm border disabled:opacity-50" style="border-color: var(--border);">
+            Next
+          </button>
+        </div>
+      </div>
+    {/if}
   {/if}
 </div>

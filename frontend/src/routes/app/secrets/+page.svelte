@@ -2,9 +2,11 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { currentAppId } from '$lib/stores/app';
-  import type { ApplicationSecret } from '$lib/api/client';
+  import type { ApplicationSecret, PaginatedResponse } from '$lib/api/client';
 
   let secrets = $state<ApplicationSecret[]>([]);
+  let total = $state(0);
+  let currentPage = $state(1);
   let loading = $state(true);
   let newName = $state('');
   let newSecret = $state<ApplicationSecret | null>(null);
@@ -17,10 +19,15 @@
     await loadSecrets();
   });
 
-  async function loadSecrets() {
+  async function loadSecrets(page = 1) {
+    if (!appId) return;
+    loading = true;
     try {
       const { secretApi } = await import('$lib/api/client');
-      secrets = await secretApi.list(appId);
+      const result = await secretApi.list(appId, { page, per_page: 20 });
+      secrets = result.data;
+      total = result.total;
+      currentPage = page;
     } catch (e) {
       console.error(e);
     } finally {
@@ -29,11 +36,12 @@
   }
 
   async function createSecret() {
-    if (!newName.trim()) return;
+    if (!newName.trim() || !appId) return;
     try {
       const { secretApi } = await import('$lib/api/client');
       newSecret = await secretApi.create(appId, { name: newName });
       secrets = [newSecret, ...secrets];
+      total++;
       newName = '';
     } catch (e) {
       console.error(e);
@@ -44,8 +52,10 @@
     if (!confirm('Delete this secret? This cannot be undone.')) return;
     try {
       const { secretApi } = await import('$lib/api/client');
+      if (!appId) return;
       await secretApi.delete(appId, id);
       secrets = secrets.filter(s => s.id !== id);
+      total--;
     } catch (e) {
       console.error(e);
     }
@@ -114,5 +124,22 @@
         </div>
       {/each}
     </div>
+
+    <!-- Pagination -->
+    {#if total > 20}
+      <div class="flex items-center justify-between mt-6">
+        <p class="text-sm" style="color: var(--text-muted);">Showing {(currentPage - 1) * 20 + 1}-{Math.min(currentPage * 20, total)} of {total}</p>
+        <div class="flex gap-2">
+          <button onclick={() => loadSecrets(currentPage - 1)} disabled={currentPage === 1}
+            class="px-3 py-1 rounded text-sm border disabled:opacity-50" style="border-color: var(--border);">
+            Previous
+          </button>
+          <button onclick={() => loadSecrets(currentPage + 1)} disabled={currentPage * 20 >= total}
+            class="px-3 py-1 rounded text-sm border disabled:opacity-50" style="border-color: var(--border);">
+            Next
+          </button>
+        </div>
+      </div>
+    {/if}
   {/if}
 </div>

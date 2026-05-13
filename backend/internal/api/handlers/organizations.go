@@ -227,6 +227,41 @@ func (h *OrganizationHandler) InviteMember(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(inv)
 }
 
+func (h *OrganizationHandler) AcceptInvitation(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
+	}
+
+	token := c.Params("token")
+	if token == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Token is required"})
+	}
+
+	inv, err := h.store.GetInvitationByToken(c.Context(), token)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(models.ErrorResponse{Error: "Invalid or expired invitation"})
+	}
+
+	user, err := h.store.GetUserByID(c.Context(), userID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(models.ErrorResponse{Error: "User not found"})
+	}
+
+	if user.Email != inv.Email {
+		return c.Status(fiber.StatusForbidden).JSON(models.ErrorResponse{Error: "This invitation is for a different email address"})
+	}
+
+	member, err := h.store.AddOrganizationMember(c.Context(), inv.OrganizationID, userID, inv.Role)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{Error: "Failed to accept invitation"})
+	}
+
+	h.store.DeleteInvitation(c.Context(), inv.ID)
+
+	return c.JSON(member)
+}
+
 func (h *OrganizationHandler) RemoveMember(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(uuid.UUID)
 	if !ok {
