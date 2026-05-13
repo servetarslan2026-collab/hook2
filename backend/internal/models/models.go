@@ -69,6 +69,8 @@ type Subscription struct {
 	Secret        string    `json:"secret,omitempty"`
 	Description   string    `json:"description"`
 	Enabled       bool      `json:"enabled"`
+	RetryCount    int       `json:"retry_count"`
+	RetryDelays   string    `json:"retry_delays"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
@@ -150,6 +152,8 @@ type CreateSubscriptionRequest struct {
 	EventTypes  []string `json:"event_types"`
 	TargetURL   string   `json:"target_url"`
 	Description string   `json:"description"`
+	RetryCount  int      `json:"retry_count,omitempty"`
+	RetryDelays string   `json:"retry_delays,omitempty"`
 }
 
 type SendEventRequest struct {
@@ -186,6 +190,8 @@ type UpdateSubscriptionRequest struct {
 	TargetURL   *string   `json:"target_url,omitempty"`
 	Description *string   `json:"description,omitempty"`
 	Enabled     *bool     `json:"enabled,omitempty"`
+	RetryCount  *int      `json:"retry_count,omitempty"`
+	RetryDelays *string   `json:"retry_delays,omitempty"`
 }
 
 type PaginatedResponse struct {

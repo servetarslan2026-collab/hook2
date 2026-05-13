@@ -9,6 +9,8 @@
   let targetUrl = $state('');
   let description = $state('');
   let selectedEventTypes = $state<string[]>([]);
+  let retryCount = $state(3);
+  let retryDelays = $state('1s,30s,5m');
   let loading = $state(true);
   let saving = $state(false);
   let error = $state('');
@@ -67,7 +69,9 @@
       await subscriptionApi.create(selectedAppId, {
         event_types: selectedEventTypes,
         target_url: targetUrl,
-        description
+        description,
+        retry_count: retryCount,
+        retry_delays: retryDelays
       });
       goto('/app/subscriptions');
     } catch (e: any) {
@@ -147,6 +151,35 @@
             {/each}
           </div>
         {/if}
+      </div>
+
+      <!-- Retry Configuration -->
+      <div class="rounded-xl border p-5 space-y-4" style="background: var(--bg-secondary); border-color: var(--border);">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span class="text-sm font-medium">Retry Policy</span>
+        </div>
+        <p class="text-xs" style="color: var(--text-muted);">Configure how many times to retry failed deliveries and the delay between attempts</p>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Max Retries</label>
+            <input type="number" bind:value={retryCount} min="0" max="10"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2"
+              style="background: var(--bg-tertiary); border-color: var(--border); color: var(--text-primary); --tw-ring-color: var(--accent);" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Retry Delays</label>
+            <input type="text" bind:value={retryDelays} placeholder="1s,30s,5m"
+              class="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 font-mono"
+              style="background: var(--bg-tertiary); border-color: var(--border); color: var(--text-primary); --tw-ring-color: var(--accent);" />
+          </div>
+        </div>
+        <p class="text-xs" style="color: var(--text-muted);">
+          Delays: comma-separated durations (e.g. <span class="font-mono">1s,30s,5m</span>). Each delay corresponds to a retry attempt.
+        </p>
       </div>
 
       {#if error}

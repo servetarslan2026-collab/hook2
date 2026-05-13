@@ -71,6 +71,8 @@ func (h *EventHandler) Receive(c *fiber.Ctx) error {
 				EventType:      req.EventType,
 				Payload:        req.Payload,
 				AttemptNumber:  1,
+				MaxAttempts:    sub.RetryCount,
+				RetryDelays:    sub.RetryDelays,
 				CreatedAt:      event.CreatedAt,
 			}
 			if err := h.queue.PublishEvent(c.Context(), job); err != nil {

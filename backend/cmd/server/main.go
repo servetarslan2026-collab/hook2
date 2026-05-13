@@ -269,6 +269,9 @@ func runMigrations(ctx context.Context, db *pgx.Conn) error {
 	CREATE INDEX IF NOT EXISTS idx_verification_tokens_token ON verification_tokens(token);
 
 	ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false;
+
+	ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS retry_count INTEGER NOT NULL DEFAULT 3;
+	ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS retry_delays TEXT NOT NULL DEFAULT '1s,30s,5m';
 	`
 
 	_, err := db.Exec(ctx, migration)

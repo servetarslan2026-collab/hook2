@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,15 +22,34 @@ import (
 )
 
 const (
-	maxAttempts = 3
-	httpTimeout = 30 * time.Second
-	maxBodySize = 1 << 20 // 1MB
+	defaultMaxAttempts = 3
+	httpTimeout        = 30 * time.Second
+	maxBodySize        = 1 << 20 // 1MB
 )
 
-var retryDelays = []time.Duration{
+var defaultRetryDelays = []time.Duration{
 	1 * time.Second,
 	30 * time.Second,
 	5 * time.Minute,
+}
+
+// parseRetryDelays parses a comma-separated string of durations (e.g. "1s,30s,5m").
+func parseRetryDelays(raw string) []time.Duration {
+	if raw == "" {
+		return defaultRetryDelays
+	}
+	parts := strings.Split(raw, ",")
+	delays := make([]time.Duration, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if d, err := time.ParseDuration(p); err == nil {
+			delays = append(delays, d)
+		}
+	}
+	if len(delays) == 0 {
+		return defaultRetryDelays
+	}
+	return delays
 }
 
 type DeliveryBroadcaster interface {
@@ -146,10 +166,21 @@ func (w *Worker) handleFailure(ctx context.Context, job *queue.WebhookJob, statu
 		zap.Error(err),
 	)
 
+	// Determine retry config (per-subscription or default)
+	maxAttempts := job.MaxAttempts
+	if maxAttempts <= 0 {
+		maxAttempts = defaultMaxAttempts
+	}
+	delays := parseRetryDelays(job.RetryDelays)
+
 	// Retry if under max attempts
 	if job.AttemptNumber < maxAttempts {
 		job.AttemptNumber++
-		delay := retryDelays[job.AttemptNumber-1]
+		delayIdx := job.AttemptNumber - 2 // attempt 2 uses delays[0], etc.
+		if delayIdx >= len(delays) {
+			delayIdx = len(delays) - 1
+		}
+		delay := delays[delayIdx]
 
 		w.logger.Info("Scheduling retry",
 			zap.String("event_id", job.EventID.String()),

@@ -518,16 +518,22 @@ func (s *Store) DeleteEventType(ctx context.Context, id uuid.UUID) error {
 
 // ==================== Subscriptions ====================
 
-func (s *Store) CreateSubscription(ctx context.Context, appID uuid.UUID, eventTypes []string, targetURL, description string) (*models.Subscription, error) {
+func (s *Store) CreateSubscription(ctx context.Context, appID uuid.UUID, eventTypes []string, targetURL, description string, retryCount int, retryDelays string) (*models.Subscription, error) {
 	sub := &models.Subscription{}
 	secret := "whsec_sub_" + uuid.New().String()
 	eventTypesJSON, _ := json.Marshal(eventTypes)
+	if retryCount <= 0 {
+		retryCount = 3
+	}
+	if retryDelays == "" {
+		retryDelays = "1s,30s,5m"
+	}
 	err := s.db.QueryRow(ctx,
-		`INSERT INTO subscriptions (id, application_id, event_types, target_url, secret, description, enabled, created_at, updated_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, true, $7, $7)
-		 RETURNING id, application_id, event_types, target_url, secret, description, enabled, created_at, updated_at`,
-		uuid.New(), appID, string(eventTypesJSON), targetURL, secret, description, time.Now(),
-	).Scan(&sub.ID, &sub.ApplicationID, &eventTypesJSON, &sub.TargetURL, &sub.Secret, &sub.Description, &sub.Enabled, &sub.CreatedAt, &sub.UpdatedAt)
+		`INSERT INTO subscriptions (id, application_id, event_types, target_url, secret, description, enabled, retry_count, retry_delays, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, true, $7, $8, $9, $9)
+		 RETURNING id, application_id, event_types, target_url, secret, description, enabled, retry_count, retry_delays, created_at, updated_at`,
+		uuid.New(), appID, string(eventTypesJSON), targetURL, secret, description, retryCount, retryDelays, time.Now(),
+	).Scan(&sub.ID, &sub.ApplicationID, &eventTypesJSON, &sub.TargetURL, &sub.Secret, &sub.Description, &sub.Enabled, &sub.RetryCount, &sub.RetryDelays, &sub.CreatedAt, &sub.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("create subscription: %w", err)
 	}
@@ -539,9 +545,9 @@ func (s *Store) GetSubscription(ctx context.Context, id uuid.UUID) (*models.Subs
 	sub := &models.Subscription{}
 	var eventTypesJSON string
 	err := s.db.QueryRow(ctx,
-		`SELECT id, application_id, event_types, target_url, secret, description, enabled, created_at, updated_at
+		`SELECT id, application_id, event_types, target_url, secret, description, enabled, retry_count, retry_delays, created_at, updated_at
 		 FROM subscriptions WHERE id = $1`, id,
-	).Scan(&sub.ID, &sub.ApplicationID, &eventTypesJSON, &sub.TargetURL, &sub.Secret, &sub.Description, &sub.Enabled, &sub.CreatedAt, &sub.UpdatedAt)
+	).Scan(&sub.ID, &sub.ApplicationID, &eventTypesJSON, &sub.TargetURL, &sub.Secret, &sub.Description, &sub.Enabled, &sub.RetryCount, &sub.RetryDelays, &sub.CreatedAt, &sub.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("get subscription: %w", err)
 	}
@@ -562,7 +568,7 @@ func (s *Store) ListSubscriptions(ctx context.Context, appID uuid.UUID, page, pe
 	}
 
 	rows, err := s.db.Query(ctx,
-		`SELECT id, application_id, event_types, target_url, '', description, enabled, created_at, updated_at
+		`SELECT id, application_id, event_types, target_url, '', description, enabled, retry_count, retry_delays, created_at, updated_at
 		 FROM subscriptions WHERE application_id = $1
 		 ORDER BY created_at DESC LIMIT $2 OFFSET $3`, appID, perPage, offset,
 	)
@@ -575,7 +581,7 @@ func (s *Store) ListSubscriptions(ctx context.Context, appID uuid.UUID, page, pe
 	for rows.Next() {
 		var sub models.Subscription
 		var eventTypesJSON string
-		if err := rows.Scan(&sub.ID, &sub.ApplicationID, &eventTypesJSON, &sub.TargetURL, &sub.Secret, &sub.Description, &sub.Enabled, &sub.CreatedAt, &sub.UpdatedAt); err != nil {
+		if err := rows.Scan(&sub.ID, &sub.ApplicationID, &eventTypesJSON, &sub.TargetURL, &sub.Secret, &sub.Description, &sub.Enabled, &sub.RetryCount, &sub.RetryDelays, &sub.CreatedAt, &sub.UpdatedAt); err != nil {
 			return nil, 0, err
 		}
 		json.Unmarshal([]byte(eventTypesJSON), &sub.EventTypes)
@@ -586,7 +592,7 @@ func (s *Store) ListSubscriptions(ctx context.Context, appID uuid.UUID, page, pe
 
 func (s *Store) ListSubscriptionsByEventType(ctx context.Context, appID uuid.UUID, eventType string) ([]models.Subscription, error) {
 	rows, err := s.db.Query(ctx,
-		`SELECT id, application_id, event_types, target_url, secret, description, enabled, created_at, updated_at
+		`SELECT id, application_id, event_types, target_url, secret, description, enabled, retry_count, retry_delays, created_at, updated_at
 		 FROM subscriptions
 		 WHERE application_id = $1 AND enabled = true AND event_types::jsonb ? $2`,
 		appID, eventType,
@@ -600,7 +606,7 @@ func (s *Store) ListSubscriptionsByEventType(ctx context.Context, appID uuid.UUI
 	for rows.Next() {
 		var sub models.Subscription
 		var eventTypesJSON string
-		if err := rows.Scan(&sub.ID, &sub.ApplicationID, &eventTypesJSON, &sub.TargetURL, &sub.Secret, &sub.Description, &sub.Enabled, &sub.CreatedAt, &sub.UpdatedAt); err != nil {
+		if err := rows.Scan(&sub.ID, &sub.ApplicationID, &eventTypesJSON, &sub.TargetURL, &sub.Secret, &sub.Description, &sub.Enabled, &sub.RetryCount, &sub.RetryDelays, &sub.CreatedAt, &sub.UpdatedAt); err != nil {
 			return nil, err
 		}
 		json.Unmarshal([]byte(eventTypesJSON), &sub.EventTypes)
@@ -627,11 +633,17 @@ func (s *Store) UpdateSubscription(ctx context.Context, id uuid.UUID, req models
 	if req.Enabled != nil {
 		sub.Enabled = *req.Enabled
 	}
+	if req.RetryCount != nil {
+		sub.RetryCount = *req.RetryCount
+	}
+	if req.RetryDelays != nil {
+		sub.RetryDelays = *req.RetryDelays
+	}
 
 	eventTypesJSON, _ := json.Marshal(sub.EventTypes)
 	_, err = s.db.Exec(ctx,
-		`UPDATE subscriptions SET event_types = $2, target_url = $3, description = $4, enabled = $5, updated_at = $6 WHERE id = $1`,
-		id, string(eventTypesJSON), sub.TargetURL, sub.Description, sub.Enabled, time.Now(),
+		`UPDATE subscriptions SET event_types = $2, target_url = $3, description = $4, enabled = $5, retry_count = $6, retry_delays = $7, updated_at = $8 WHERE id = $1`,
+		id, string(eventTypesJSON), sub.TargetURL, sub.Description, sub.Enabled, sub.RetryCount, sub.RetryDelays, time.Now(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("update subscription: %w", err)

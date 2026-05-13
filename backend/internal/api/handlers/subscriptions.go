@@ -49,7 +49,7 @@ func (h *SubscriptionHandler) Create(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "At least one event type is required"})
 	}
 
-	sub, err := h.store.CreateSubscription(c.Context(), appID, req.EventTypes, req.TargetURL, req.Description)
+	sub, err := h.store.CreateSubscription(c.Context(), appID, req.EventTypes, req.TargetURL, req.Description, req.RetryCount, req.RetryDelays)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{Error: "Failed to create subscription"})
 	}

@@ -76,6 +76,8 @@ export interface Subscription {
   target_url: string;
   description: string;
   enabled: boolean;
+  retry_count: number;
+  retry_delays: string;
   created_at: string;
 }
 
@@ -189,7 +191,7 @@ export const subscriptionApi = {
   list: (appId: string, params?: { page?: number; per_page?: number }) =>
     api.get(`applications/${appId}/subscriptions`, { searchParams: params as any }).json<PaginatedResponse<Subscription>>(),
   get: (id: string) => api.get(`subscriptions/${id}`).json<Subscription>(),
-  create: (appId: string, data: { event_types: string[]; target_url: string; description: string }) =>
+  create: (appId: string, data: { event_types: string[]; target_url: string; description: string; retry_count?: number; retry_delays?: string }) =>
     api.post(`applications/${appId}/subscriptions`, { json: data }).json<Subscription>(),
   update: (id: string, data: Partial<Subscription>) =>
     api.put(`subscriptions/${id}`, { json: data }).json<Subscription>(),

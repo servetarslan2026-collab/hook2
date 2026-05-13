@@ -20,6 +20,8 @@ type WebhookJob struct {
 	EventType      string    `json:"event_type"`
 	Payload        []byte    `json:"payload"`
 	AttemptNumber  int       `json:"attempt_number"`
+	MaxAttempts    int       `json:"max_attempts"`
+	RetryDelays    string    `json:"retry_delays"`
 	CreatedAt      time.Time `json:"created_at"`
 }
 
