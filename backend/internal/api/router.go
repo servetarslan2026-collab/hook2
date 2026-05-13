@@ -41,52 +41,52 @@ func SetupRoutes(app *fiber.App, s *store.Store, authSvc *auth.AuthService, q *q
 	// Organizations
 	protected.Post("/organizations", orgH.Create)
 	protected.Get("/organizations", orgH.List)
-	protected.Get("/organizations/:org_id", orgH.Get)
-	protected.Put("/organizations/:org_id", orgH.Update)
-	protected.Delete("/organizations/:org_id", orgH.Delete)
-	protected.Get("/organizations/:org_id/dashboard", dashH.OrgStats)
-	protected.Get("/organizations/:org_id/chart", dashH.OrgChartData)
+	protected.Get("/organizations/:id", orgH.Get)
+	protected.Put("/organizations/:id", orgH.Update)
+	protected.Delete("/organizations/:id", orgH.Delete)
+	protected.Get("/organizations/:id/dashboard", dashH.OrgStats)
+	protected.Get("/organizations/:id/chart", dashH.OrgChartData)
 
 	// Organization members
-	protected.Get("/organizations/:org_id/members", orgH.ListMembers)
-	protected.Post("/organizations/:org_id/members", orgH.InviteMember)
-	protected.Delete("/organizations/:org_id/members/:user_id", orgH.RemoveMember)
+	protected.Get("/organizations/:id/members", orgH.ListMembers)
+	protected.Post("/organizations/:id/members", orgH.InviteMember)
+	protected.Delete("/organizations/:id/members/:userId", orgH.RemoveMember)
 
 	// Applications
-	protected.Post("/organizations/:org_id/applications", appH.Create)
-	protected.Get("/organizations/:org_id/applications", appH.List)
-	protected.Get("/applications/:app_id", appH.Get)
-	protected.Put("/applications/:app_id", appH.Update)
-	protected.Delete("/applications/:app_id", appH.Delete)
-	protected.Get("/applications/:app_id/dashboard", dashH.AppStats)
-	protected.Get("/applications/:app_id/chart", dashH.AppChartData)
+	protected.Post("/organizations/:id/applications", appH.Create)
+	protected.Get("/organizations/:id/applications", appH.List)
+	protected.Get("/applications/:id", appH.Get)
+	protected.Put("/applications/:id", appH.Update)
+	protected.Delete("/applications/:id", appH.Delete)
+	protected.Get("/applications/:id/dashboard", dashH.AppStats)
+	protected.Get("/applications/:id/chart", dashH.AppChartData)
 
 	// Application secrets
-	protected.Post("/applications/:app_id/secrets", secretH.Create)
-	protected.Get("/applications/:app_id/secrets", secretH.List)
-	protected.Delete("/applications/:app_id/secrets/:secret_id", secretH.Delete)
+	protected.Post("/applications/:id/secrets", secretH.Create)
+	protected.Get("/applications/:id/secrets", secretH.List)
+	protected.Delete("/applications/:id/secrets/:secretId", secretH.Delete)
 
 	// Event types
-	protected.Post("/applications/:app_id/event-types", eventTypeH.Create)
-	protected.Get("/applications/:app_id/event-types", eventTypeH.List)
-	protected.Delete("/applications/:app_id/event-types/:et_id", eventTypeH.Delete)
+	protected.Post("/applications/:id/event-types", eventTypeH.Create)
+	protected.Get("/applications/:id/event-types", eventTypeH.List)
+	protected.Delete("/applications/:id/event-types/:etId", eventTypeH.Delete)
 
 	// Subscriptions
-	protected.Post("/applications/:app_id/subscriptions", subH.Create)
-	protected.Get("/applications/:app_id/subscriptions", subH.List)
-	protected.Get("/subscriptions/:sub_id", subH.Get)
-	protected.Put("/subscriptions/:sub_id", subH.Update)
-	protected.Delete("/subscriptions/:sub_id", subH.Delete)
+	protected.Post("/applications/:id/subscriptions", subH.Create)
+	protected.Get("/applications/:id/subscriptions", subH.List)
+	protected.Get("/subscriptions/:id", subH.Get)
+	protected.Put("/subscriptions/:id", subH.Update)
+	protected.Delete("/subscriptions/:id", subH.Delete)
 
 	// Events
-	protected.Post("/applications/:app_id/events", eventH.Receive)
-	protected.Get("/applications/:app_id/events", eventH.List)
-	protected.Get("/events/:event_id", eventH.Get)
+	protected.Post("/applications/:id/events", eventH.Receive)
+	protected.Get("/applications/:id/events", eventH.List)
+	protected.Get("/events/:id", eventH.Get)
 
 	// Deliveries
-	protected.Get("/applications/:app_id/deliveries", deliveryH.List)
-	protected.Get("/deliveries/:delivery_id", deliveryH.Get)
-	protected.Post("/deliveries/:delivery_id/retry", deliveryH.Retry)
+	protected.Get("/applications/:id/deliveries", deliveryH.List)
+	protected.Get("/deliveries/:id", deliveryH.Get)
+	protected.Post("/deliveries/:id/retry", deliveryH.Retry)
 
 	// API Documentation
 	protected.Get("/documentation", handlers.GetAPIDoc())

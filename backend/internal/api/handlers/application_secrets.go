@@ -21,7 +21,7 @@ func (h *ApplicationSecretHandler) Create(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	appID, err := uuid.Parse(c.Params("appId"))
+	appID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid application ID"})
 	}
@@ -59,7 +59,7 @@ func (h *ApplicationSecretHandler) List(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	appID, err := uuid.Parse(c.Params("appId"))
+	appID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid application ID"})
 	}
@@ -97,7 +97,7 @@ func (h *ApplicationSecretHandler) Delete(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	appID, err := uuid.Parse(c.Params("appId"))
+	appID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid application ID"})
 	}

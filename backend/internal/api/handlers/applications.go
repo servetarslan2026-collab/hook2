@@ -21,7 +21,7 @@ func (h *ApplicationHandler) Create(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	orgID, err := uuid.Parse(c.Params("orgId"))
+	orgID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid organization ID"})
 	}
@@ -54,7 +54,7 @@ func (h *ApplicationHandler) List(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	orgID, err := uuid.Parse(c.Params("orgId"))
+	orgID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid organization ID"})
 	}

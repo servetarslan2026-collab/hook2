@@ -21,7 +21,7 @@ func (h *EventTypeHandler) Create(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	appID, err := uuid.Parse(c.Params("appId"))
+	appID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid application ID"})
 	}
@@ -59,7 +59,7 @@ func (h *EventTypeHandler) List(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	appID, err := uuid.Parse(c.Params("appId"))
+	appID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid application ID"})
 	}
@@ -97,7 +97,7 @@ func (h *EventTypeHandler) Get(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	etID, err := uuid.Parse(c.Params("id"))
+	etID, err := uuid.Parse(c.Params("etId"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid event type ID"})
 	}
@@ -126,7 +126,7 @@ func (h *EventTypeHandler) Update(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	etID, err := uuid.Parse(c.Params("id"))
+	etID, err := uuid.Parse(c.Params("etId"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid event type ID"})
 	}
@@ -169,7 +169,7 @@ func (h *EventTypeHandler) Delete(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	etID, err := uuid.Parse(c.Params("id"))
+	etID, err := uuid.Parse(c.Params("etId"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid event type ID"})
 	}

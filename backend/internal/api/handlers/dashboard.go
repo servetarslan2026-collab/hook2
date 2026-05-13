@@ -21,7 +21,7 @@ func (h *DashboardHandler) AppStats(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	appID, err := uuid.Parse(c.Params("appId"))
+	appID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid application ID"})
 	}
@@ -50,7 +50,7 @@ func (h *DashboardHandler) AppChartData(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	appID, err := uuid.Parse(c.Params("appId"))
+	appID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid application ID"})
 	}
@@ -81,7 +81,7 @@ func (h *DashboardHandler) OrgStats(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	orgID, err := uuid.Parse(c.Params("orgId"))
+	orgID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid organization ID"})
 	}
@@ -105,7 +105,7 @@ func (h *DashboardHandler) OrgChartData(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
 	}
 
-	orgID, err := uuid.Parse(c.Params("orgId"))
+	orgID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid organization ID"})
 	}

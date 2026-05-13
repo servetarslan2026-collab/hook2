@@ -1,193 +1,192 @@
 # Webhook Service
 
-Production-ready Webhook-as-a-Service platform built with Go and Svelte.
+Webhook-as-a-Service platformu — Go + Svelte ile sıfırdan inşa edildi.
 
-## Architecture
+## 🚀 Hızlı Başlangıç
+
+### Ön Koşullar
+- [Docker](https://docs.docker.com/get-docker/) kurulu olmalı
+- [Docker Compose](https://docs.docker.com/compose/install/) kurulu olmalı
+
+### Çalıştırma
+
+```bash
+# 1. Repoyu klonla
+git clone https://github.com/servetarslan02/depo.git
+cd depo
+
+# 2. Tüm servisleri başlat (ilk seferde birkaç dakika sürer)
+docker-compose up --build
+
+# 3. Hazır! Tarayıcıda aç:
+#    Frontend:  http://localhost:5173
+#    API:       http://localhost:3000
+#    NATS UI:   http://localhost:8222
+```
+
+### İlk Kullanım
+1. `http://localhost:5173/register` → Hesap oluştur
+2. Giriş yap → Organization oluştur → Application oluştur
+3. Event Type tanımla → Subscription oluştur (webhook URL'in ile)
+4. Event gönder → Delivery loglarını kontrol et
+
+---
+
+## 📐 Mimari
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │  Frontend   │────▶│  Backend    │────▶│ PostgreSQL  │
-│ Svelte 5    │     │  Go/Fiber   │     │             │
+│ Svelte 5    │     │  Go/Fiber   │     │   (veri)    │
 │ Tailwind    │     │             │     └─────────────┘
 └─────────────┘     │             │
                     │             │────▶ Redis (cache)
                     │             │
-                    │             │────▶ NATS (queue)
+                    │             │────▶ NATS (kuyruk)
                     └─────────────┘
                             │
                     ┌───────▼───────┐
                     │  Worker       │
                     │  (webhook     │
-                    │   delivery)   │
+                    │   teslimat)   │
+                    └───────────────┘
+                            │
+                    ┌───────▼───────┐
+                    │  Hedef URL    │
                     └───────────────┘
 ```
 
-## Tech Stack
+## 🛠 Teknoloji Stack
 
-| Component | Technology |
-|-----------|-----------|
+| Bileşen | Teknoloji |
+|---------|-----------|
 | Backend | Go 1.22 + Fiber v2 |
 | Frontend | Svelte 5 + SvelteKit + Tailwind CSS 4 |
-| Database | PostgreSQL 17 |
+| Veritabanı | PostgreSQL 17 |
 | Cache | Redis 7 |
-| Queue | NATS JetStream |
-| Auth | JWT + API Keys |
+| Kuyruk | NATS JetStream |
+| Auth | JWT + API Key |
 | Deploy | Docker Compose |
 
-## Quick Start
+---
 
+## 📡 API Referansı
+
+### Kimlik Doğrulama
 ```bash
-# Clone and start everything
-cd webhook-service
-docker-compose up --build
+# Kayıt ol
+curl -X POST http://localhost:3000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@test.com", "password": "12345678", "name": "Test"}'
 
-# Access:
-# Frontend: http://localhost:5173
-# API:      http://localhost:3000
-# NATS UI:  http://localhost:8222
-```
-
-## API Endpoints
-
-### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/register` | Register new user |
-| POST | `/api/v1/auth/login` | Login |
-| POST | `/api/v1/auth/refresh` | Refresh token |
-
-### Organizations
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/organizations` | List organizations |
-| POST | `/api/v1/organizations` | Create organization |
-| GET | `/api/v1/organizations/:id` | Get organization |
-| PUT | `/api/v1/organizations/:id` | Update organization |
-| DELETE | `/api/v1/organizations/:id` | Delete organization |
-| GET | `/api/v1/organizations/:id/dashboard` | Dashboard stats |
-
-### Applications
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/organizations/:id/applications` | List applications |
-| POST | `/api/v1/organizations/:id/applications` | Create application |
-| GET | `/api/v1/applications/:id` | Get application |
-| PUT | `/api/v1/applications/:id` | Update application |
-| DELETE | `/api/v1/applications/:id` | Delete application |
-
-### Event Types
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/applications/:id/event-types` | List event types |
-| POST | `/api/v1/applications/:id/event-types` | Create event type |
-| DELETE | `/api/v1/applications/:id/event-types/:id` | Delete event type |
-
-### Subscriptions
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/applications/:id/subscriptions` | List subscriptions |
-| POST | `/api/v1/applications/:id/subscriptions` | Create subscription |
-| GET | `/api/v1/subscriptions/:id` | Get subscription |
-| PUT | `/api/v1/subscriptions/:id` | Update subscription |
-| DELETE | `/api/v1/subscriptions/:id` | Delete subscription |
-| POST | `/api/v1/subscriptions/:id/test` | Test subscription |
-
-### Events
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/applications/:id/events` | Send event |
-| GET | `/api/v1/applications/:id/events` | List events |
-| GET | `/api/v1/events/:id` | Get event detail |
-
-### Deliveries
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/applications/:id/deliveries` | List deliveries |
-| GET | `/api/v1/deliveries/:id` | Get delivery detail |
-| POST | `/api/v1/deliveries/:id/retry` | Retry delivery |
-
-### Secrets
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/applications/:id/secrets` | List secrets |
-| POST | `/api/v1/applications/:id/secrets` | Create secret |
-| DELETE | `/api/v1/applications/:id/secrets/:id` | Delete secret |
-
-## Authentication
-
-Two methods supported:
-
-### JWT Token
-```bash
-# Login first
+# Giriş yap
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "password"}'
-
-# Use token in requests
-curl http://localhost:3000/api/v1/organizations \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  -d '{"email": "test@test.com", "password": "12345678"}'
 ```
 
-### API Key
+### Webhook Gönderme
 ```bash
-# Create a secret first, then use it
-curl http://localhost:3000/api/v1/applications/APP_ID/events \
-  -H "X-API-Key: whkey_YOUR_API_KEY"
+# API Key ile event gönder
+curl -X POST http://localhost:3000/api/v1/applications/{app_id}/events \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: whkey_YOUR_KEY" \
+  -d '{
+    "event_type": "order.created",
+    "payload": {"order_id": "12345", "amount": 99.99}
+  }'
 ```
 
-## Webhook Delivery
+### Tüm Endpoint'ler
 
-- **Retry strategy**: 3 attempts with exponential backoff (1s, 30s, 5min)
-- **Signing**: HMAC-SHA256 signature in `X-Webhook-Signature` header
-- **Dead Letter Queue**: Failed deliveries after max attempts go to DLQ
+| Method | Endpoint | Açıklama |
+|--------|----------|----------|
+| POST | `/api/v1/auth/register` | Kayıt ol |
+| POST | `/api/v1/auth/login` | Giriş yap |
+| GET | `/api/v1/organizations` | Organizasyonları listele |
+| POST | `/api/v1/organizations` | Organizasyon oluştur |
+| GET | `/api/v1/organizations/:id` | Organizasyon detayı |
+| GET | `/api/v1/organizations/:id/applications` | Uygulamaları listele |
+| POST | `/api/v1/organizations/:id/applications` | Uygulama oluştur |
+| GET | `/api/v1/applications/:id` | Uygulama detayı |
+| GET | `/api/v1/applications/:id/event-types` | Event type'ları listele |
+| POST | `/api/v1/applications/:id/event-types` | Event type oluştur |
+| GET | `/api/v1/applications/:id/subscriptions` | Subscription'ları listele |
+| POST | `/api/v1/applications/:id/subscriptions` | Subscription oluştur |
+| POST | `/api/v1/applications/:id/events` | Event gönder |
+| GET | `/api/v1/applications/:id/events` | Event'leri listele |
+| GET | `/api/v1/applications/:id/deliveries` | Delivery loglarını listele |
+| POST | `/api/v1/deliveries/:id/retry` | Delivery'yi tekrar dene |
+| GET | `/api/v1/applications/:id/secrets` | API key'leri listele |
+| POST | `/api/v1/applications/:id/secrets` | API key oluştur |
 
-### Webhook Payload Format
-```json
-{
-  "event_id": "uuid",
-  "event_type": "order.created",
-  "payload": { ... },
-  "created_at": "2026-01-01T00:00:00Z"
-}
+---
+
+## 🔐 Webhook İmzalama
+
+Her webhook isteği `X-Webhook-Signature` header'ı ile imzalanır:
+
+```
+X-Webhook-Signature: sha256=<hex-encoded-hmac>
 ```
 
-### Webhook Headers
-| Header | Description |
-|--------|-------------|
-| Content-Type | application/json |
-| User-Agent | WebhookService/1.0 |
-| X-Webhook-Event | Event type name |
-| X-Webhook-Event-ID | Event UUID |
-| X-Webhook-Signature | HMAC-SHA256 signature |
+İmza doğrulama:
+```python
+import hmac, hashlib
 
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| SERVER_PORT | 3000 | API server port |
-| DATABASE_URL | postgres://... | PostgreSQL connection |
-| NATS_URL | nats://localhost:4222 | NATS connection |
-| REDIS_URL | redis://localhost:6379 | Redis connection |
-| JWT_SECRET | (change me) | JWT signing secret |
-| JWT_EXPIRY | 24h | Token expiry |
-| WORKER_COUNT | 4 | Delivery workers |
-| FRONTEND_URL | http://localhost:5173 | CORS origin |
-
-## Development
-
-```bash
-# Backend
-cd backend
-go mod download
-go run ./cmd/server
-
-# Frontend
-cd frontend
-npm install
-npm run dev
+def verify_signature(payload, secret, signature):
+    expected = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", signature)
 ```
 
-## License
+---
+
+## ⚙️ Ortam Değişkenleri
+
+| Değişken | Varsayılan | Açıklama |
+|----------|-----------|----------|
+| `SERVER_PORT` | 3000 | API port |
+| `DATABASE_URL` | postgres://... | PostgreSQL bağlantısı |
+| `NATS_URL` | nats://localhost:4222 | NATS bağlantısı |
+| `REDIS_URL` | redis://localhost:6379 | Redis bağlantısı |
+| `JWT_SECRET` | (değiştir!) | JWT imza sırrı |
+| `JWT_EXPIRY` | 24h | Token süresi |
+| `WORKER_COUNT` | 4 | Worker sayısı |
+| `FRONTEND_URL` | http://localhost:5173 | CORS origin |
+
+---
+
+## 📁 Proje Yapısı
+
+```
+webhook-service/
+├── backend/
+│   ├── cmd/server/main.go          # Ana giriş noktası + migrasyon
+│   ├── internal/
+│   │   ├── api/
+│   │   │   ├── handlers/           # HTTP handler'lar (10 dosya)
+│   │   │   ├── middleware/         # Auth, CORS, logger, rate limit
+│   │   │   └── router.go          # Route tanımları
+│   │   ├── auth/                   # JWT + API key
+│   │   ├── config/                 # Ortam değişkenleri
+│   │   ├── models/                 # Veri modelleri
+│   │   ├── queue/                  # NATS JetStream
+│   │   ├── store/                  # PostgreSQL CRUD
+│   │   └── worker/                 # Webhook delivery worker
+│   └── Dockerfile
+├── frontend/
+│   ├── src/
+│   │   ├── lib/api/client.ts       # API istemcisi + tipler
+│   │   ├── lib/stores/auth.ts      # Auth state
+│   │   └── routes/                 # Sayfalar (11 sayfa)
+│   └── Dockerfile
+├── docker-compose.yaml             # Tüm servisler
+├── PROGRESS.md                     # İlerleme takibi
+└── README.md                       # Bu dosya
+```
+
+---
+
+## 📝 Lisans
 
 MIT

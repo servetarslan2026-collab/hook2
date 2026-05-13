@@ -107,7 +107,7 @@ func (h *EventHandler) List(c *fiber.Ctx) error {
 		})
 	}
 
-	appID, err := uuid.Parse(c.Params("appId"))
+	appID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid application ID"})
 	}
