@@ -1,11 +1,17 @@
 package handlers
 
 import (
+	"math"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"webhook-service/internal/models"
 	"webhook-service/internal/store"
 )
+
+func totalPages(count int, perPage int) int {
+	return int(math.Ceil(float64(count) / float64(perPage)))
+}
 
 type AdminHandler struct {
 	store *store.Store

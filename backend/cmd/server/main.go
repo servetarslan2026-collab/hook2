@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -10,7 +11,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/expfmt"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
@@ -96,8 +98,16 @@ func main() {
 
 	// Prometheus metrics endpoint
 	app.Get("/metrics", func(c *fiber.Ctx) error {
-		promhttp.Handler().ServeHTTP(c.Context(), nil)
-		return nil
+		mfs, err := prometheus.DefaultGatherer.Gather()
+		if err != nil {
+			return c.Status(500).SendString("metrics gather error")
+		}
+		var buf bytes.Buffer
+		for _, mf := range mfs {
+			expfmt.MetricFamilyToText(&buf, mf)
+		}
+		c.Set("Content-Type", string(expfmt.NewFormat(expfmt.TypeTextPlain)))
+		return c.Send(buf.Bytes())
 	})
 
 	// Routes

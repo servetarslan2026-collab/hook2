@@ -62,7 +62,7 @@
     <div>
       <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Metadata (JSON, optional)</label>
       <textarea bind:value={metadataText} rows="4"
-        placeholder='{"source": "test", "user_id": "123"}'
+        placeholder="JSON metadata (optional)"
         class="w-full px-4 py-2.5 rounded-lg border text-sm font-mono focus:outline-none focus:ring-2"
         style="background: var(--bg-tertiary); border-color: var(--border); color: var(--text-primary); --tw-ring-color: var(--accent);"></textarea>
     </div>

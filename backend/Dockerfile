@@ -1,7 +1,11 @@
 # Build stage
 FROM golang:1.22-alpine AS builder
+RUN apk --no-cache add git
 WORKDIR /app
 COPY go.mod ./
+ENV GONOSUMCHECK=*
+ENV GONOSUMDB=*
+ENV GOPROXY=https://proxy.golang.org,direct
 RUN go mod download || true
 COPY . .
 RUN go mod tidy

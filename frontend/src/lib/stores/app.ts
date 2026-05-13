@@ -1,4 +1,4 @@
-import { writable } from 'svelte store';
+import { writable } from 'svelte/store';
 
 function createAppStore() {
   const stored = typeof window !== 'undefined' ? localStorage.getItem('currentAppId') : null;

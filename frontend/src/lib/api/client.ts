@@ -1,5 +1,6 @@
-import { PUBLIC_API_URL } from '$env/static/public';
 import ky from 'ky';
+
+const PUBLIC_API_URL = import.meta.env.PUBLIC_API_URL || '/api/v1';
 
 export const api = ky.create({
   prefixUrl: PUBLIC_API_URL || '/api/v1',

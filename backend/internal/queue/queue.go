@@ -148,7 +148,7 @@ func (q *Queue) PublishDLQ(ctx context.Context, job *WebhookJob) error {
 	return nil
 }
 
-func (q *Queue) SubscribeDelivery(handler func(*WebhookJob) error) (nats.Subscription, error) {
+func (q *Queue) SubscribeDelivery(handler func(*WebhookJob) error) (*nats.Subscription, error) {
 	return q.js.QueueSubscribe("webhook.delivery", "webhook-workers", func(msg *nats.Msg) {
 		var job WebhookJob
 		if err := json.Unmarshal(msg.Data, &job); err != nil {
@@ -168,7 +168,7 @@ func (q *Queue) SubscribeDelivery(handler func(*WebhookJob) error) (nats.Subscri
 	}, nats.ManualAck(), nats.MaxAckPending(100))
 }
 
-func (q *Queue) SubscribeRetry(handler func(*WebhookJob) error) (nats.Subscription, error) {
+func (q *Queue) SubscribeRetry(handler func(*WebhookJob) error) (*nats.Subscription, error) {
 	return q.js.QueueSubscribe("webhook.retry", "webhook-retry-workers", func(msg *nats.Msg) {
 		var job WebhookJob
 		if err := json.Unmarshal(msg.Data, &job); err != nil {

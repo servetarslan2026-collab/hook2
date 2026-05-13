@@ -63,8 +63,10 @@
   {:else}
     <div class="space-y-3">
       {#each orgs as org}
-        <a href="/organizations/{org.id}"
-          class="flex items-center justify-between p-4 rounded-xl border transition-colors hover:border-gray-600"
+        <div role="link" tabindex="0"
+          onclick={() => goto(`/organizations/${org.id}`)}
+          onkeydown={(e) => e.key === 'Enter' && goto(`/organizations/${org.id}`)}
+          class="flex items-center justify-between p-4 rounded-xl border transition-colors hover:border-gray-600 cursor-pointer"
           style="background: var(--bg-secondary); border-color: var(--border);">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg" style="background: var(--accent);">
@@ -86,7 +88,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
           </div>
-        </a>
+        </div>
       {/each}
     </div>
   {/if}

@@ -1,6 +1,7 @@
 import { writable, get } from 'svelte/store';
-import { PUBLIC_API_URL } from '$env/static/public';
 import { auth } from './auth';
+
+const PUBLIC_API_URL = import.meta.env.PUBLIC_API_URL || '/api/v1';
 
 export interface DeliveryUpdate {
   type: string;
