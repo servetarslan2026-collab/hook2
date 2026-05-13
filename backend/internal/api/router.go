@@ -100,7 +100,17 @@ func SetupRoutes(app *fiber.App, s *store.Store, authSvc *auth.AuthService, q *q
 	protected.Get("/documentation", handlers.GetAPIDoc())
 
 	// WebSocket — real-time delivery updates
-	// No auth middleware on WS upgrade path; clients connect after obtaining a JWT via the UI.
 	api.Get("/ws/deliveries", ws.Upgrade(), ws.Handle(hub))
 	api.Get("/ws/status", ws.StatusHandler(hub))
+
+	// Admin routes (requires admin role)
+	adminH := handlers.NewAdminHandler(s)
+	admin := api.Group("/admin", middleware.AuthMiddleware(authSvc, s), middleware.AdminMiddleware(s))
+	admin.Get("/stats", adminH.SystemStats)
+	admin.Get("/users", adminH.ListUsers)
+	admin.Put("/users/:id/admin", adminH.SetUserAdmin)
+	admin.Delete("/users/:id", adminH.DeleteUser)
+	admin.Get("/organizations", adminH.ListOrganizations)
+	admin.Delete("/organizations/:id", adminH.DeleteOrganization)
+	admin.Get("/dead-letters", adminH.ListDeadLetters)
 }

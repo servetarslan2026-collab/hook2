@@ -267,6 +267,8 @@ func runMigrations(ctx context.Context, db *pgx.Conn) error {
 		expires_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() + INTERVAL '24 hours'
 	);
 	CREATE INDEX IF NOT EXISTS idx_verification_tokens_token ON verification_tokens(token);
+
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false;
 	`
 
 	_, err := db.Exec(ctx, migration)

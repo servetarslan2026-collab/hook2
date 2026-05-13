@@ -56,8 +56,8 @@ func (s *Store) CreateUser(ctx context.Context, email, passwordHash, name string
 func (s *Store) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	u := &models.User{}
 	err := s.db.QueryRow(ctx,
-		`SELECT id, email, password_hash, name, created_at, updated_at FROM users WHERE id = $1`, id,
-	).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.CreatedAt, &u.UpdatedAt)
+		`SELECT id, email, password_hash, name, COALESCE(is_admin, false), COALESCE(email_verified, false), created_at, updated_at FROM users WHERE id = $1`, id,
+	).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.IsAdmin, &u.EmailVerified, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("get user by id: %w", err)
 	}
@@ -67,8 +67,8 @@ func (s *Store) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, er
 func (s *Store) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	u := &models.User{}
 	err := s.db.QueryRow(ctx,
-		`SELECT id, email, password_hash, name, created_at, updated_at FROM users WHERE email = $1`, email,
-	).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.CreatedAt, &u.UpdatedAt)
+		`SELECT id, email, password_hash, name, COALESCE(is_admin, false), COALESCE(email_verified, false), created_at, updated_at FROM users WHERE email = $1`, email,
+	).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.IsAdmin, &u.EmailVerified, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("get user by email: %w", err)
 	}
@@ -79,9 +79,9 @@ func (s *Store) UpdateUser(ctx context.Context, id uuid.UUID, name, email string
 	u := &models.User{}
 	err := s.db.QueryRow(ctx,
 		`UPDATE users SET name = $2, email = $3, updated_at = $4 WHERE id = $1
-		 RETURNING id, email, name, created_at, updated_at`,
+		 RETURNING id, email, name, is_admin, email_verified, created_at, updated_at`,
 		id, name, email, time.Now(),
-	).Scan(&u.ID, &u.Email, &u.Name, &u.CreatedAt, &u.UpdatedAt)
+	).Scan(&u.ID, &u.Email, &u.Name, &u.IsAdmin, &u.EmailVerified, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("update user: %w", err)
 	}
@@ -1171,4 +1171,153 @@ func (s *Store) IsUserVerified(ctx context.Context, userID uuid.UUID) (bool, err
 		`SELECT email_verified FROM users WHERE id = $1`, userID,
 	).Scan(&verified)
 	return verified, err
+}
+
+// ==================== Admin ====================
+
+type SystemStats struct {
+	TotalUsers         int64   `json:"total_users"`
+	TotalOrganizations int64   `json:"total_organizations"`
+	TotalApplications  int64   `json:"total_applications"`
+	TotalEvents        int64   `json:"total_events"`
+	TotalDeliveries    int64   `json:"total_deliveries"`
+	TotalSubscriptions int64   `json:"total_subscriptions"`
+	SuccessRate        float64 `json:"success_rate"`
+	DeadLetterCount    int64   `json:"dead_letter_count"`
+}
+
+func (s *Store) GetSystemStats(ctx context.Context) (*SystemStats, error) {
+	stats := &SystemStats{}
+
+	s.db.QueryRow(ctx, `SELECT COUNT(*) FROM users`).Scan(&stats.TotalUsers)
+	s.db.QueryRow(ctx, `SELECT COUNT(*) FROM organizations`).Scan(&stats.TotalOrganizations)
+	s.db.QueryRow(ctx, `SELECT COUNT(*) FROM applications`).Scan(&stats.TotalApplications)
+	s.db.QueryRow(ctx, `SELECT COUNT(*) FROM events`).Scan(&stats.TotalEvents)
+	s.db.QueryRow(ctx, `SELECT COUNT(*) FROM delivery_attempts`).Scan(&stats.TotalDeliveries)
+	s.db.QueryRow(ctx, `SELECT COUNT(*) FROM subscriptions`).Scan(&stats.TotalSubscriptions)
+	s.db.QueryRow(ctx, `SELECT COUNT(*) FROM delivery_attempts WHERE status = 'dead_letter'`).Scan(&stats.DeadLetterCount)
+
+	var successCount int64
+	s.db.QueryRow(ctx, `SELECT COUNT(*) FROM delivery_attempts WHERE status = 'success'`).Scan(&successCount)
+	if stats.TotalDeliveries > 0 {
+		stats.SuccessRate = float64(successCount) / float64(stats.TotalDeliveries) * 100
+	}
+
+	return stats, nil
+}
+
+func (s *Store) ListAllUsers(ctx context.Context, page, perPage int) ([]models.User, int, error) {
+	page, perPage = paginate(page, perPage)
+	offset := (page - 1) * perPage
+
+	var total int
+	err := s.db.QueryRow(ctx, `SELECT COUNT(*) FROM users`).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rows, err := s.db.Query(ctx,
+		`SELECT id, email, name, is_admin, email_verified, created_at, updated_at
+		 FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`, perPage, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var users []models.User
+	for rows.Next() {
+		var u models.User
+		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.IsAdmin, &u.EmailVerified, &u.CreatedAt, &u.UpdatedAt); err != nil {
+			return nil, 0, err
+		}
+		users = append(users, u)
+	}
+	return users, total, nil
+}
+
+func (s *Store) SetUserAdmin(ctx context.Context, userID uuid.UUID, isAdmin bool) error {
+	_, err := s.db.Exec(ctx,
+		`UPDATE users SET is_admin = $2, updated_at = $3 WHERE id = $1`,
+		userID, isAdmin, time.Now(),
+	)
+	return err
+}
+
+func (s *Store) DeleteUser(ctx context.Context, userID uuid.UUID) error {
+	_, err := s.db.Exec(ctx, `DELETE FROM users WHERE id = $1`, userID)
+	return err
+}
+
+func (s *Store) ListAllOrganizations(ctx context.Context, page, perPage int) ([]models.Organization, int, error) {
+	page, perPage = paginate(page, perPage)
+	offset := (page - 1) * perPage
+
+	var total int
+	err := s.db.QueryRow(ctx, `SELECT COUNT(*) FROM organizations`).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rows, err := s.db.Query(ctx,
+		`SELECT id, name, owner_id, created_at, updated_at
+		 FROM organizations ORDER BY created_at DESC LIMIT $1 OFFSET $2`, perPage, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var orgs []models.Organization
+	for rows.Next() {
+		var o models.Organization
+		if err := rows.Scan(&o.ID, &o.Name, &o.OwnerID, &o.CreatedAt, &o.UpdatedAt); err != nil {
+			return nil, 0, err
+		}
+		orgs = append(orgs, o)
+	}
+	return orgs, total, nil
+}
+
+func (s *Store) ListDeadLetterDeliveries(ctx context.Context, page, perPage int) ([]models.DeliveryAttempt, int, error) {
+	page, perPage = paginate(page, perPage)
+	offset := (page - 1) * perPage
+
+	var total int
+	err := s.db.QueryRow(ctx, `SELECT COUNT(*) FROM delivery_attempts WHERE status = 'dead_letter'`).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rows, err := s.db.Query(ctx,
+		`SELECT id, event_id, subscription_id, status, status_code, request_body, response_body, duration_ms, attempt_number, created_at
+		 FROM delivery_attempts WHERE status = 'dead_letter'
+		 ORDER BY created_at DESC LIMIT $1 OFFSET $2`, perPage, offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var attempts []models.DeliveryAttempt
+	for rows.Next() {
+		var da models.DeliveryAttempt
+		if err := rows.Scan(&da.ID, &da.EventID, &da.SubscriptionID, &da.Status, &da.StatusCode, &da.RequestBody, &da.ResponseBody, &da.DurationMs, &da.AttemptNumber, &da.CreatedAt); err != nil {
+			return nil, 0, err
+		}
+		attempts = append(attempts, da)
+	}
+	return attempts, total, nil
+}
+
+// GetUser returns a user by ID (alias for GetUserByID for admin middleware).
+func (s *Store) GetUser(ctx context.Context, id uuid.UUID) (*models.User, error) {
+	u := &models.User{}
+	err := s.db.QueryRow(ctx,
+		`SELECT id, email, password_hash, name, is_admin, email_verified, created_at, updated_at FROM users WHERE id = $1`, id,
+	).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.IsAdmin, &u.EmailVerified, &u.CreatedAt, &u.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("get user: %w", err)
+	}
+	return u, nil
 }
