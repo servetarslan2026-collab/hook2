@@ -1,89 +1,146 @@
-# Webhook Service - Proje Takip Dosyası
+# Webhook Service
 
-**Başlangıç:** 2026-05-13
-**Repo:** https://github.com/servetarslan02/depo
-**Tech Stack:** Go (Fiber) + Svelte 5 + Tailwind + PostgreSQL + NATS + Redis
+**Ne bu?** Webhook gönderen bir platform. Diğer uygulamalar sana event gönderdiğinde, senin belirlediğin URL'lere webhook olarak iletiyor.
+
+**Durum:** Çalışıyor ama eksik sayfalar var (aşağıda listelenmiş).
 
 ---
 
-## Aşama 1: Kritik Düzeltmeler (Derlenme için zorunlu)
+## 🚀 Çalıştırma (3 Adım)
 
-- [x] `go.sum` dosyası → Dockerfile içinde `go mod tidy` çalışacak şekilde düzeltildi
-- [x] Route parametre uyumsuzluğu düzeltildi (hepsi `:id` ve handler'larla eşleşiyor)
-- [x] `.gitignore` eklendi
+```bash
+# 1. Klonla
+git clone https://github.com/servetarslan02/depo.git
+cd depo
 
-## Aşama 2: Eksik Frontend Sayfalar (12 sayfa)
+# 2. Başlat (ilk seferde 2-3 dakika sürer)
+docker-compose up --build
 
-- [ ] `/organizations` — Tüm organizasyonlar listesi
-- [ ] `/organizations/[id]/settings` — Organizasyon ayarları
-- [ ] `/organizations/[id]/members` — Üye yönetimi
-- [ ] `/organizations/[id]/service-tokens` — Service token yönetimi
-- [ ] `/app/[id]/event-types` — Event type yönetimi (listele, oluştur, sil)
-- [ ] `/app/[id]/settings` — Uygulama ayarları
-- [ ] `/app/deliveries/[id]` — Delivery detay sayfası (request/response body)
-- [ ] `/app/events/[id]` — Event detay sayfası (payload, metadata)
-- [ ] `/app/subscriptions/new` — Yeni subscription oluşturma formu
-- [ ] `/settings` — Kullanıcı profil ve şifre değiştirme
-- [ ] `/register` — Kayıt sayfası (login'den ayrı)
-- [ ] `/forgot-password` — Şifre sıfırlama sayfası
+# 3. Aç
+# Tarayıcıda: http://localhost:5173
+```
 
-## Aşama 3: Eksik Özellikler
+**Ön koşul:** [Docker](https://docs.docker.com/get-docker/) kurulu olmalı.
 
-- [ ] Email doğrulama akışı (register sonrası)
-- [ ] Organizasyona davet sistemi (email ile üye çağırma)
-- [ ] Webhook imza doğrulama yardımcısı (frontend'de signature test)
-- [ ] Pagination — tüm list sayfalarına ekle (events, deliveries, subscriptions)
-- [ ] API key ile rate limiting (Redis tabanlı, farklı limitler)
+**İlk kullanım:**
+1. Kayıt ol → Giriş yap
+2. Organization oluştur → Application oluştur
+3. Event Type tanımla → Subscription oluştur (webhook URL'in ile)
+4. Event gönder → Delivery loglarını kontrol et
 
-## Aşama 4: İyileştirmeler
+---
 
-- [ ] OpenAPI/Swagger spec — tam ve doğru spec oluştur
-- [ ] Test dosyaları — unit test (handler, store, worker)
-- [ ] CI/CD pipeline — GitHub Actions (test, lint, build)
-- [ ] Monitoring — Prometheus metrics endpoint (`/metrics`)
-- [ ] Structured logging — tüm katmanlarda zap ile tutarlı log
+## 📁 Dosya Yapısı
 
-## Aşama 5: Deploy & Production
+```
+webhook-service/
+├── backend/                    → Go API sunucusu
+│   ├── cmd/server/main.go      → Ana dosya (buradan başlar)
+│   ├── internal/
+│   │   ├── api/handlers/       → Her endpoint'in mantığı (10 dosya)
+│   │   ├── api/middleware/     → Auth, CORS, logging, rate limit
+│   │   ├── auth/               → JWT ve API key işlemleri
+│   │   ├── models/             → Veri yapıları (User, Event, Subscription vs.)
+│   │   ├── queue/              → NATS bağlantısı (webhook kuyruğu)
+│   │   ├── store/              → PostgreSQL sorguları
+│   │   └── worker/             → Webhook gönderme işçisi
+│   └── Dockerfile
+├── frontend/                   → Svelte 5 web arayüzü
+│   ├── src/routes/             → Sayfalar (11 tane var)
+│   ├── src/lib/api/client.ts   → Backend ile iletişim
+│   └── Dockerfile
+├── docker-compose.yaml         → Tüm servisler (DB, Redis, NATS, API, Frontend)
+├── README.md                   → Detaylı dokümantasyon
+└── PROGRESS.md                 → Bu dosya
+```
 
-- [ ] Production Docker Compose (Caddy reverse proxy, SSL)
+---
+
+## ✅ Yapılanlar (Çalışıyor)
+
+| Özellik | Durum |
+|---------|-------|
+| Kullanıcı kayıt/giriş (JWT) | ✅ |
+| Organizasyon oluşturma | ✅ |
+| Uygulama oluşturma | ✅ |
+| Event Type tanımlama | ✅ |
+| Webhook Subscription (CRUD) | ✅ |
+| Event gönderme (API + UI) | ✅ |
+| Webhook delivery (3 deneme: 1sn, 30sn, 5dk) | ✅ |
+| HMAC-SHA256 imzalama | ✅ |
+| Dead letter queue (başarısız webhook'lar) | ✅ |
+| Delivery logları | ✅ |
+| API key yönetimi | ✅ |
+| Rate limiting | ✅ |
+| Dashboard istatistikleri | ✅ |
+| Docker Compose ile tek komutla çalıştırma | ✅ |
+
+---
+
+## ❌ Eksikler (Yapılacaklar)
+
+### Öncelik 1 — Eksik Sayfalar (12 tane)
+
+Bu sayfalar henüz yok. Eklenmesi lazım:
+
+| Sayfa | Ne işe yarar | Dosya yolu |
+|-------|-------------|-----------|
+| Organizasyon listesi | Tüm organizasyonları göster | `routes/organizations/+page.svelte` |
+| Org ayarları | İsim değiştirme, silme | `routes/organizations/[id]/settings/+page.svelte` |
+| Üye yönetimi | Davet et, çıkar | `routes/organizations/[id]/members/+page.svelte` |
+| Service tokens | API token yönetimi | `routes/organizations/[id]/service-tokens/+page.svelte` |
+| Event types | Listele, oluştur, sil | `routes/app/[id]/event-types/+page.svelte` |
+| Uygulama ayarları | İsim/değiştirme, silme | `routes/app/[id]/settings/+page.svelte` |
+| Delivery detay | Request/response body göster | `routes/app/deliveries/[id]/+page.svelte` |
+| Event detay | Payload ve metadata göster | `routes/app/events/[id]/+page.svelte` |
+| Yeni subscription | Form ile oluşturma | `routes/app/subscriptions/new/+page.svelte` |
+| Kullanıcı ayarları | Profil ve şifre değiştirme | `routes/settings/+page.svelte` |
+| Kayıt sayfası | Ayrı kayıt sayfası | `routes/register/+page.svelte` |
+| Şifre sıfırlama | Email ile sıfırlama | `routes/forgot-password/+page.svelte` |
+
+### Öncelik 2 — Eksik Özellikler (5 tane)
+
+- [ ] Email doğrulama (register sonrası email gönderme)
+- [ ] Organizasyona davet (email ile üye çağırma)
+- [ ] Webhook imza test aracı (frontend'de)
+- [ ] Pagination (sayfalama — tüm list sayfalarında)
+- [ ] API key bazlı rate limiting
+
+### Öncelik 3 — İyileştirmeler (5 tane)
+
+- [ ] OpenAPI/Swagger spec
+- [ ] Unit test'ler
+- [ ] CI/CD (GitHub Actions)
+- [ ] Monitoring (Prometheus)
+- [ ] Structured logging
+
+### Öncelik 4 — Production Hazırlığı (5 tane)
+
+- [ ] SSL/TLS (Caddy reverse proxy)
 - [ ] Environment değişkenleri dokümantasyonu
-- [ ] Database backup stratejisi
-- [ ] Health check endpoint'leri (DB, NATS, Redis)
-- [ ] Graceful shutdown (tüm bileşenler)
+- [ ] Database backup
+- [ ] Health check endpoint'leri
+- [ ] Graceful shutdown
 
 ---
 
-## Tamamlananlar
+## 🛠 Teknoloji Kararları
 
-- [x] Backend API yapısı (Go + Fiber) — 10 handler, 4 middleware
-- [x] PostgreSQL veritabanı şeması + migrasyonlar
-- [x] NATS JetStream kuyruk sistemi
-- [x] Webhook delivery worker (3 retry: 1s, 30s, 5min)
-- [x] HMAC-SHA256 imzalama
-- [x] Dead letter queue
-- [x] JWT + API Key authentication
-- [x] Redis rate limiting (temel)
-- [x] Frontend layout (sidebar, header, dark mode)
-- [x] Login sayfası
-- [x] Dashboard sayfası
-- [x] Events listesi sayfası
-- [x] Subscriptions listesi sayfası
-- [x] Deliveries listesi sayfası
-- [x] Secrets yönetimi sayfası
-- [x] Send event sayfası
-- [x] Organization create sayfası
-- [x] Organization detail sayfası
-- [x] Application dashboard sayfası
-- [x] API client (ky) + tüm TypeScript tipler
-- [x] Auth store (JWT token yönetimi)
-- [x] Docker Compose (PostgreSQL + Redis + NATS + API + Frontend)
-- [x] README dokümantasyonu
+| Karar | Seçenek | Neden |
+|-------|---------|-------|
+| Backend dili | Go (Rust değil) | Rust öğrenmek 3-6 ay, Go 1-2 hafta |
+| Web framework | Fiber | Go'da en hızlı, Express benzeri |
+| Frontend | Svelte 5 | React/Vue'dan daha hızlı, daha az kod |
+| Queue | NATS JetStream | RabbitMQ'dan daha hızlı, daha basit |
+| DB | PostgreSQL | Güvenilir, JSON desteği var |
+| Cache | Redis | Rate limit ve session için |
 
 ---
 
-## Notlar
+## ⚠️ Bilinmesi Gerekenler
 
-- Servet'in Rust deneyimi yok → Go ile devam
-- Ölçek zirve olacak → NATS JetStream seçildi (RabbitMQ yerine)
-- Hook0 SSPL lisanslı → Tasarım ilham alındı, kod sıfırdan yazıldı
-- GitHub token'ı revoke edilmeli (chat'te paylaşıldı)
+- **Hook0'dan ilham alındı** ama kod sıfırdan yazıldı (SSPL lisansı nedeniyle)
+- **GitHub token'ı** chat'te paylaşıldı → revoke edilmeli
+- **Frontend'de 12 sayfa eksik** → çalışır ama bazı sayfalar 404 verir
+- **go.sum dosyası yok** → Docker build sırasında otomatik oluşur (go mod tidy)
+- **package-lock.json yok** → Docker build sırasında otomatik oluşur (npm install)
