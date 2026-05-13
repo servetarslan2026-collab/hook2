@@ -79,24 +79,24 @@ webhook-service/
 
 ## ❌ Eksikler (Yapılacaklar)
 
-### Öncelik 1 — Eksik Sayfalar (12 tane)
+### Öncelik 1 — Eksik Sayfalar (12 tane) ✅ TAMAMLANDI
 
-Bu sayfalar henüz yok. Eklenmesi lazım:
+| Sayfa | Ne işe yarar | Dosya yolu | Durum |
+|-------|-------------|-----------|-------|
+| Organizasyon listesi | Tüm organizasyonları göster | `routes/organizations/+page.svelte` | ✅ |
+| Org ayarları | İsim değiştirme, silme | `routes/organizations/[id]/settings/+page.svelte` | ✅ |
+| Üye yönetimi | Davet et, çıkar | `routes/organizations/[id]/members/+page.svelte` | ✅ |
+| Service tokens | API token yönetimi | `routes/organizations/[id]/service-tokens/+page.svelte` | ✅ |
+| Event types | Listele, oluştur, sil | `routes/app/event-types/+page.svelte` | ✅ |
+| Uygulama ayarları | İsim/değiştirme, silme | `routes/app/settings/+page.svelte` | ✅ |
+| Delivery detay | Request/response body göster | `routes/app/deliveries/[id]/+page.svelte` | ✅ |
+| Event detay | Payload ve metadata göster | `routes/app/events/[id]/+page.svelte` | ✅ |
+| Yeni subscription | Form ile oluşturma | `routes/app/subscriptions/new/+page.svelte` | ✅ |
+| Kullanıcı ayarları | Profil ve şifre değiştirme | `routes/settings/+page.svelte` | ✅ |
+| Kayıt sayfası | Ayrı kayıt sayfası | `routes/register/+page.svelte` | ✅ |
+| Şifre sıfırlama | Email ile sıfırlama | `routes/forgot-password/+page.svelte` | ✅ |
 
-| Sayfa | Ne işe yarar | Dosya yolu |
-|-------|-------------|-----------|
-| Organizasyon listesi | Tüm organizasyonları göster | `routes/organizations/+page.svelte` |
-| Org ayarları | İsim değiştirme, silme | `routes/organizations/[id]/settings/+page.svelte` |
-| Üye yönetimi | Davet et, çıkar | `routes/organizations/[id]/members/+page.svelte` |
-| Service tokens | API token yönetimi | `routes/organizations/[id]/service-tokens/+page.svelte` |
-| Event types | Listele, oluştur, sil | `routes/app/[id]/event-types/+page.svelte` |
-| Uygulama ayarları | İsim/değiştirme, silme | `routes/app/[id]/settings/+page.svelte` |
-| Delivery detay | Request/response body göster | `routes/app/deliveries/[id]/+page.svelte` |
-| Event detay | Payload ve metadata göster | `routes/app/events/[id]/+page.svelte` |
-| Yeni subscription | Form ile oluşturma | `routes/app/subscriptions/new/+page.svelte` |
-| Kullanıcı ayarları | Profil ve şifre değiştirme | `routes/settings/+page.svelte` |
-| Kayıt sayfası | Ayrı kayıt sayfası | `routes/register/+page.svelte` |
-| Şifre sıfırlama | Email ile sıfırlama | `routes/forgot-password/+page.svelte` |
+**Ek düzeltmeler:** `currentAppId` store eklendi, mevcut app sayfaları store'a taşındı, sidebar güncellendi.
 
 ### Öncelik 2 — Eksik Özellikler (5 tane)
 
@@ -141,6 +141,6 @@ Bu sayfalar henüz yok. Eklenmesi lazım:
 
 - **Hook0'dan ilham alındı** ama kod sıfırdan yazıldı (SSPL lisansı nedeniyle)
 - **GitHub token'ı** chat'te paylaşıldı → revoke edilmeli
-- **Frontend'de 12 sayfa eksik** → çalışır ama bazı sayfalar 404 verir
+- **Frontend'de 12 sayfa eksik** → ✅ Tamamlandı (2026-05-13)
 - **go.sum dosyası yok** → Docker build sırasında otomatik oluşur (go mod tidy)
 - **package-lock.json yok** → Docker build sırasında otomatik oluşur (npm install)
