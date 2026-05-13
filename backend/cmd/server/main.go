@@ -16,6 +16,7 @@ import (
 
 	"webhook-service/internal/api"
 	"webhook-service/internal/api/middleware"
+	"webhook-service/internal/api/ws"
 	"webhook-service/internal/auth"
 	"webhook-service/internal/config"
 	"webhook-service/internal/queue"
@@ -71,8 +72,11 @@ func main() {
 	defer rdb.Close()
 	logger.Info("Connected to Redis")
 
+	// WebSocket hub
+	hub := ws.NewHub(logger)
+
 	// Start workers
-	w := worker.New(q, s, logger)
+	w := worker.New(q, s, logger, hub)
 	if err := w.Start(ctx, cfg.WorkerCount); err != nil {
 		logger.Fatal("Failed to start workers", zap.Error(err))
 	}
@@ -97,7 +101,7 @@ func main() {
 	})
 
 	// Routes
-	api.SetupRoutes(app, s, authSvc, q)
+	api.SetupRoutes(app, s, authSvc, q, hub)
 
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {

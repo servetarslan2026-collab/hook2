@@ -12,6 +12,7 @@ import (
 )
 
 type WebhookJob struct {
+	ApplicationID  uuid.UUID `json:"application_id"`
 	EventID        uuid.UUID `json:"event_id"`
 	SubscriptionID uuid.UUID `json:"subscription_id"`
 	TargetURL      string    `json:"target_url"`

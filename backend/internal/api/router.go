@@ -4,12 +4,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"webhook-service/internal/api/handlers"
 	"webhook-service/internal/api/middleware"
+	"webhook-service/internal/api/ws"
 	"webhook-service/internal/auth"
 	"webhook-service/internal/queue"
 	"webhook-service/internal/store"
 )
 
-func SetupRoutes(app *fiber.App, s *store.Store, authSvc *auth.AuthService, q *queue.Queue) {
+func SetupRoutes(app *fiber.App, s *store.Store, authSvc *auth.AuthService, q *queue.Queue, hub *ws.Hub) {
 	// Initialize handlers
 	authH := handlers.NewAuthHandler(s, authSvc)
 	userH := handlers.NewUserHandler(s, authSvc)
@@ -97,4 +98,9 @@ func SetupRoutes(app *fiber.App, s *store.Store, authSvc *auth.AuthService, q *q
 
 	// API Documentation
 	protected.Get("/documentation", handlers.GetAPIDoc())
+
+	// WebSocket — real-time delivery updates
+	// No auth middleware on WS upgrade path; clients connect after obtaining a JWT via the UI.
+	api.Get("/ws/deliveries", ws.Upgrade(), ws.Handle(hub))
+	api.Get("/ws/status", ws.StatusHandler(hub))
 }

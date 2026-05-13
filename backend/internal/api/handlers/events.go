@@ -63,6 +63,7 @@ func (h *EventHandler) Receive(c *fiber.Ctx) error {
 				continue
 			}
 			job := &queue.WebhookJob{
+				ApplicationID:  appID,
 				EventID:        event.ID,
 				SubscriptionID: sub.ID,
 				TargetURL:      sub.TargetURL,
