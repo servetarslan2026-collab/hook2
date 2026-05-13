@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { page } from '$app/stores';
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { currentAppId } from '$lib/stores/app';
   import type { DeliveryAttempt, PaginatedResponse } from '$lib/api/client';
 
   let deliveries = $state<DeliveryAttempt[]>([]);
@@ -8,9 +9,12 @@
   let currentPage = $state(1);
   let statusFilter = $state('');
   let loading = $state(true);
-  let appId = $derived($page.params.id);
+  let appId = $state<string | null>(null);
+
+  currentAppId.subscribe(id => { appId = id; });
 
   onMount(async () => {
+    if (!appId) { goto('/'); return; }
     await loadDeliveries();
   });
 

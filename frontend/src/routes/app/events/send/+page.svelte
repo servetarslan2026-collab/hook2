@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { currentAppId } from '$lib/stores/app';
 
   let eventType = $state('');
   let payloadText = $state('{\n  "message": "Hello World"\n}');
@@ -8,7 +9,13 @@
   let loading = $state(false);
   let error = $state('');
   let success = $state(false);
-  let appId = $derived($page.params.id);
+  let appId = $state<string | null>(null);
+
+  currentAppId.subscribe(id => { appId = id; });
+
+  onMount(() => {
+    if (!appId) goto('/');
+  });
 
   async function sendEvent() {
     error = '';

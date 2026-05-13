@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
+  import { currentAppId } from '$lib/stores/app';
   import type { Application, StatsResponse, ChartDataPoint } from '$lib/api/client';
 
   let app = $state<Application | null>(null);
@@ -9,6 +10,9 @@
   let appId = $derived($page.params.id);
 
   onMount(async () => {
+    // Set the current app ID in the store so sidebar links work
+    currentAppId.set(appId);
+
     try {
       const { appApi } = await import('$lib/api/client');
       [app, stats] = await Promise.all([

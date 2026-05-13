@@ -1,15 +1,19 @@
 <script lang="ts">
-  import { page } from '$app/stores';
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { currentAppId } from '$lib/stores/app';
   import type { ApplicationSecret } from '$lib/api/client';
 
   let secrets = $state<ApplicationSecret[]>([]);
   let loading = $state(true);
   let newName = $state('');
   let newSecret = $state<ApplicationSecret | null>(null);
-  let appId = $derived($page.params.id);
+  let appId = $state<string | null>(null);
+
+  currentAppId.subscribe(id => { appId = id; });
 
   onMount(async () => {
+    if (!appId) { goto('/'); return; }
     await loadSecrets();
   });
 

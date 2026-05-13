@@ -1,13 +1,17 @@
 <script lang="ts">
-  import { page } from '$app/stores';
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { currentAppId } from '$lib/stores/app';
   import type { Subscription } from '$lib/api/client';
 
   let subscriptions = $state<Subscription[]>([]);
   let loading = $state(true);
-  let appId = $derived($page.params.id);
+  let appId = $state<string | null>(null);
+
+  currentAppId.subscribe(id => { appId = id; });
 
   onMount(async () => {
+    if (!appId) { goto('/'); return; }
     try {
       const { subscriptionApi } = await import('$lib/api/client');
       subscriptions = await subscriptionApi.list(appId);

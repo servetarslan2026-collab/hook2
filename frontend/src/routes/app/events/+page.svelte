@@ -1,15 +1,19 @@
 <script lang="ts">
-  import { page } from '$app/stores';
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { currentAppId } from '$lib/stores/app';
   import type { Event, PaginatedResponse } from '$lib/api/client';
 
   let events = $state<Event[]>([]);
   let total = $state(0);
   let currentPage = $state(1);
   let loading = $state(true);
-  let appId = $derived($page.params.id);
+  let appId = $state<string | null>(null);
+
+  currentAppId.subscribe(id => { appId = id; });
 
   onMount(async () => {
+    if (!appId) { goto('/'); return; }
     await loadEvents();
   });
 
