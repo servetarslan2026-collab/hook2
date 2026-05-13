@@ -10,70 +10,83 @@ import (
 )
 
 func SetupRoutes(app *fiber.App, s *store.Store, authSvc *auth.AuthService, q *queue.Queue) {
+	// Initialize handlers
+	authH := handlers.NewAuthHandler(s, authSvc)
+	userH := handlers.NewUserHandler(s, authSvc)
+	orgH := handlers.NewOrganizationHandler(s)
+	appH := handlers.NewApplicationHandler(s)
+	secretH := handlers.NewApplicationSecretHandler(s)
+	eventTypeH := handlers.NewEventTypeHandler(s)
+	subH := handlers.NewSubscriptionHandler(s)
+	eventH := handlers.NewEventHandler(s, q)
+	deliveryH := handlers.NewDeliveryHandler(s)
+	dashH := handlers.NewDashboardHandler(s)
+
 	api := app.Group("/api/v1")
 
 	// Public routes
-	api.Post("/auth/register", handlers.Register(s, authSvc))
-	api.Post("/auth/login", handlers.Login(s, authSvc))
-	api.Post("/auth/refresh", handlers.RefreshToken(authSvc))
-	api.Post("/auth/forgot-password", handlers.ForgotPassword(s))
+	api.Post("/auth/register", authH.Register)
+	api.Post("/auth/login", authH.Login)
+	api.Post("/auth/refresh", authH.RefreshToken)
+	api.Post("/auth/forgot-password", authH.ForgotPassword)
 
 	// Protected routes (JWT or API Key)
 	protected := api.Group("", middleware.AuthMiddleware(authSvc, s))
 
 	// User
-	protected.Get("/users/me", handlers.GetCurrentUser(s))
-	protected.Put("/users/me", handlers.UpdateProfile(s))
-	protected.Put("/users/me/password", handlers.UpdatePassword(s, authSvc))
+	protected.Get("/users/me", authH.GetCurrentUser)
+	protected.Put("/users/me", userH.UpdateProfile)
+	protected.Put("/users/me/password", userH.UpdatePassword)
 
 	// Organizations
-	protected.Post("/organizations", handlers.CreateOrganization(s))
-	protected.Get("/organizations", handlers.ListOrganizations(s))
-	protected.Get("/organizations/:org_id", handlers.GetOrganization(s))
-	protected.Put("/organizations/:org_id", handlers.UpdateOrganization(s))
-	protected.Delete("/organizations/:org_id", handlers.DeleteOrganization(s))
-	protected.Get("/organizations/:org_id/dashboard", handlers.OrgDashboard(s))
+	protected.Post("/organizations", orgH.Create)
+	protected.Get("/organizations", orgH.List)
+	protected.Get("/organizations/:org_id", orgH.Get)
+	protected.Put("/organizations/:org_id", orgH.Update)
+	protected.Delete("/organizations/:org_id", orgH.Delete)
+	protected.Get("/organizations/:org_id/dashboard", dashH.OrgStats)
+	protected.Get("/organizations/:org_id/chart", dashH.OrgChartData)
 
 	// Organization members
-	protected.Get("/organizations/:org_id/members", handlers.ListMembers(s))
-	protected.Post("/organizations/:org_id/members", handlers.InviteMember(s))
-	protected.Delete("/organizations/:org_id/members/:user_id", handlers.RemoveMember(s))
+	protected.Get("/organizations/:org_id/members", orgH.ListMembers)
+	protected.Post("/organizations/:org_id/members", orgH.InviteMember)
+	protected.Delete("/organizations/:org_id/members/:user_id", orgH.RemoveMember)
 
 	// Applications
-	protected.Post("/organizations/:org_id/applications", handlers.CreateApplication(s))
-	protected.Get("/organizations/:org_id/applications", handlers.ListApplications(s))
-	protected.Get("/applications/:app_id", handlers.GetApplication(s))
-	protected.Put("/applications/:app_id", handlers.UpdateApplication(s))
-	protected.Delete("/applications/:app_id", handlers.DeleteApplication(s))
-	protected.Get("/applications/:app_id/dashboard", handlers.AppDashboard(s))
+	protected.Post("/organizations/:org_id/applications", appH.Create)
+	protected.Get("/organizations/:org_id/applications", appH.List)
+	protected.Get("/applications/:app_id", appH.Get)
+	protected.Put("/applications/:app_id", appH.Update)
+	protected.Delete("/applications/:app_id", appH.Delete)
+	protected.Get("/applications/:app_id/dashboard", dashH.AppStats)
+	protected.Get("/applications/:app_id/chart", dashH.AppChartData)
 
 	// Application secrets
-	protected.Post("/applications/:app_id/secrets", handlers.CreateSecret(s))
-	protected.Get("/applications/:app_id/secrets", handlers.ListSecrets(s))
-	protected.Delete("/applications/:app_id/secrets/:secret_id", handlers.DeleteSecret(s))
+	protected.Post("/applications/:app_id/secrets", secretH.Create)
+	protected.Get("/applications/:app_id/secrets", secretH.List)
+	protected.Delete("/applications/:app_id/secrets/:secret_id", secretH.Delete)
 
 	// Event types
-	protected.Post("/applications/:app_id/event-types", handlers.CreateEventType(s))
-	protected.Get("/applications/:app_id/event-types", handlers.ListEventTypes(s))
-	protected.Delete("/applications/:app_id/event-types/:et_id", handlers.DeleteEventType(s))
+	protected.Post("/applications/:app_id/event-types", eventTypeH.Create)
+	protected.Get("/applications/:app_id/event-types", eventTypeH.List)
+	protected.Delete("/applications/:app_id/event-types/:et_id", eventTypeH.Delete)
 
 	// Subscriptions
-	protected.Post("/applications/:app_id/subscriptions", handlers.CreateSubscription(s))
-	protected.Get("/applications/:app_id/subscriptions", handlers.ListSubscriptions(s))
-	protected.Get("/subscriptions/:sub_id", handlers.GetSubscription(s))
-	protected.Put("/subscriptions/:sub_id", handlers.UpdateSubscription(s))
-	protected.Delete("/subscriptions/:sub_id", handlers.DeleteSubscription(s))
-	protected.Post("/subscriptions/:sub_id/test", handlers.TestSubscription(s, q))
+	protected.Post("/applications/:app_id/subscriptions", subH.Create)
+	protected.Get("/applications/:app_id/subscriptions", subH.List)
+	protected.Get("/subscriptions/:sub_id", subH.Get)
+	protected.Put("/subscriptions/:sub_id", subH.Update)
+	protected.Delete("/subscriptions/:sub_id", subH.Delete)
 
 	// Events
-	protected.Post("/applications/:app_id/events", handlers.SendEvent(s, q))
-	protected.Get("/applications/:app_id/events", handlers.ListEvents(s))
-	protected.Get("/events/:event_id", handlers.GetEvent(s))
+	protected.Post("/applications/:app_id/events", eventH.Receive)
+	protected.Get("/applications/:app_id/events", eventH.List)
+	protected.Get("/events/:event_id", eventH.Get)
 
 	// Deliveries
-	protected.Get("/applications/:app_id/deliveries", handlers.ListDeliveries(s))
-	protected.Get("/deliveries/:delivery_id", handlers.GetDelivery(s))
-	protected.Post("/deliveries/:delivery_id/retry", handlers.RetryDelivery(s, q))
+	protected.Get("/applications/:app_id/deliveries", deliveryH.List)
+	protected.Get("/deliveries/:delivery_id", deliveryH.Get)
+	protected.Post("/deliveries/:delivery_id/retry", deliveryH.Retry)
 
 	// API Documentation
 	protected.Get("/documentation", handlers.GetAPIDoc())

@@ -40,7 +40,6 @@ func (h *EventHandler) Receive(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Payload is required"})
 	}
 
-	// Validate JSON
 	if !json.Valid(req.Payload) {
 		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid JSON payload"})
 	}
@@ -54,9 +53,29 @@ func (h *EventHandler) Receive(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{Error: "Failed to create event"})
 	}
 
-	// Publish to queue for delivery
-	if err := h.queue.PublishEvent(event); err != nil {
-		fmt.Printf("Warning: failed to publish event to queue: %v\n", err)
+	// Find matching subscriptions and publish jobs
+	subs, err := h.store.ListSubscriptionsByEventType(c.Context(), appID, req.EventType)
+	if err != nil {
+		fmt.Printf("Warning: failed to list subscriptions: %v\n", err)
+	} else {
+		for _, sub := range subs {
+			if !sub.Enabled {
+				continue
+			}
+			job := &queue.WebhookJob{
+				EventID:        event.ID,
+				SubscriptionID: sub.ID,
+				TargetURL:      sub.TargetURL,
+				Secret:         sub.Secret,
+				EventType:      req.EventType,
+				Payload:        req.Payload,
+				AttemptNumber:  1,
+				CreatedAt:      event.CreatedAt,
+			}
+			if err := h.queue.PublishEvent(c.Context(), job); err != nil {
+				fmt.Printf("Warning: failed to publish event to queue: %v\n", err)
+			}
+		}
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(event)
@@ -65,7 +84,6 @@ func (h *EventHandler) Receive(c *fiber.Ctx) error {
 func (h *EventHandler) List(c *fiber.Ctx) error {
 	userID := c.Locals("user_id")
 	if userID == nil {
-		// API key auth
 		appIDVal := c.Locals("app_id")
 		if appIDVal == nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Authentication required"})

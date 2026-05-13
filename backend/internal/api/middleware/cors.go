@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func CORSMiddleware(frontendURL string) fiber.Handler {
+func CorsMiddleware(frontendURL string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		c.Set("Access-Control-Allow-Origin", frontendURL)
 		c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")

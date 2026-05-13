@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -29,8 +30,8 @@ func RateLimitMiddleware(rdb *redis.Client, limit int, window time.Duration) fib
 			})
 		}
 
-		c.Set("X-RateLimit-Limit", string(rune(limit)))
-		c.Set("X-RateLimit-Remaining", string(rune(int64(limit)-count)))
+		c.Set("X-RateLimit-Limit", fmt.Sprintf("%d", limit))
+		c.Set("X-RateLimit-Remaining", fmt.Sprintf("%d", int64(limit)-count))
 
 		return c.Next()
 	}

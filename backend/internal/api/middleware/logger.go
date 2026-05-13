@@ -1,24 +1,24 @@
 package middleware
 
 import (
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
 )
 
-func LoggerMiddleware() fiber.Handler {
+func LoggerMiddleware(logger *zap.Logger) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
 		err := c.Next()
 		duration := time.Since(start)
 
-		log.Printf("[%s] %s %s %d %v",
-			c.Method(),
-			c.Path(),
-			c.IP(),
-			c.Response().StatusCode(),
-			duration,
+		logger.Info("HTTP Request",
+			zap.String("method", c.Method()),
+			zap.String("path", c.Path()),
+			zap.String("ip", c.IP()),
+			zap.Int("status", c.Response().StatusCode()),
+			zap.Duration("duration", duration),
 		)
 
 		return err
