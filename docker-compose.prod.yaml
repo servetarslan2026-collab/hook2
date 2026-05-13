@@ -1,0 +1,100 @@
+# Production Docker Compose
+# Usage: docker-compose -f docker-compose.prod.yaml up --build
+#
+# Before running:
+# 1. Copy .env.example to .env and update all values
+# 2. Set your domain in Caddyfile
+# 3. Ensure ports 80 and 443 are open
+
+services:
+  # Caddy reverse proxy with auto SSL
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - frontend
+    restart: unless-stopped
+
+  # PostgreSQL
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-webhook}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-webhook_service}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/backup:/backup
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-webhook}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # NATS with JetStream
+  nats:
+    image: nats:2-alpine
+    command: ["-js", "-sd", "/data"]
+    volumes:
+      - natsdata:/data
+    restart: unless-stopped
+
+  # API Server
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      SERVER_PORT: "3000"
+      DATABASE_URL: "postgres://${POSTGRES_USER:-webhook}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-webhook_service}?sslmode=disable"
+      NATS_URL: "nats://nats:4222"
+      REDIS_URL: "redis://:${REDIS_PASSWORD}@redis:6379"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY: ${JWT_EXPIRY:-24h}
+      WORKER_COUNT: ${WORKER_COUNT:-4}
+      FRONTEND_URL: ${FRONTEND_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-/api/v1}
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  natsdata:
+  caddy_data:
+  caddy_config:

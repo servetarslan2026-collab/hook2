@@ -1,0 +1,45 @@
+{
+	apps": {
+		"http": {
+			"servers": {
+				"srv0": {
+					"listen": [":443"],
+					"routes": [
+						{
+							"match": [{"host": ["your-domain.com"]}],
+							"handle": [
+								{
+									"handler": "reverse_proxy",
+									"upstreams": [{"dial": "api:3000"}]
+								}
+							]
+						},
+						{
+							"match": [{"host": ["app.your-domain.com"]}],
+							"handle": [
+								{
+									"handler": "reverse_proxy",
+									"upstreams": [{"dial": "frontend:4173"}]
+								}
+							]
+						}
+					]
+				}
+			}
+		},
+		"tls": {
+			"automation": {
+				"policies": [
+					{
+						"issuers": [
+							{
+								"module": "acme",
+								"email": "admin@your-domain.com"
+							}
+						]
+					}
+				]
+			}
+		}
+	}
+}

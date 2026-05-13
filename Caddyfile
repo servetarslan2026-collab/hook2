@@ -1,0 +1,10 @@
+# Caddyfile — SSL/TLS reverse proxy
+# Usage: caddy run --config Caddyfile
+
+your-domain.com {
+    reverse_proxy api:3000
+}
+
+app.your-domain.com {
+    reverse_proxy frontend:4173
+}
