@@ -8,9 +8,9 @@
 
 ## Aşama 1: Kritik Düzeltmeler (Derlenme için zorunlu)
 
-- [ ] `go.sum` dosyası oluştur (`go mod tidy`)
-- [ ] Route parametre uyumsuzluğunu düzelt (router `:org_id` → handler `Params("orgId")`)
-- [ ] `.gitignore` ekle (node_modules, binary, .env, vs.)
+- [x] `go.sum` dosyası → Dockerfile içinde `go mod tidy` çalışacak şekilde düzeltildi
+- [x] Route parametre uyumsuzluğu düzeltildi (hepsi `:id` ve handler'larla eşleşiyor)
+- [x] `.gitignore` eklendi
 
 ## Aşama 2: Eksik Frontend Sayfalar (12 sayfa)
 
