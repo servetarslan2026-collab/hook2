@@ -98,13 +98,13 @@ webhook-service/
 
 **Ek düzeltmeler:** `currentAppId` store eklendi, mevcut app sayfaları store'a taşındı, sidebar güncellendi.
 
-### Öncelik 2 — Eksik Özellikler (5 tane)
+### Öncelik 2 — Eksik Özellikler (5 tane) ✅ TAMAMLANDI
 
-- [ ] Email doğrulama (register sonrası email gönderme)
-- [ ] Organizasyona davet (email ile üye çağırma)
-- [ ] Webhook imza test aracı (frontend'de)
-- [ ] Pagination (sayfalama — tüm list sayfalarında)
-- [ ] API key bazlı rate limiting
+- [x] Email doğrulama (register sonrası email gönderme) — Backend: verification_tokens tablosu + send/verify endpoints, Frontend: /verify sayfası + dashboard banner
+- [x] Organizasyona davet (email ile üye çağırma) — Backend: AcceptInvitation endpoint + Frontend: /invite/[token] sayfası
+- [x] Webhook imza test aracı (frontend'de) — /app/signature-test sayfası (HMAC-SHA256 compute + verify)
+- [x] Pagination (sayfalama — tüm list sayfalarında) — Subscriptions, Event Types, Secrets sayfalarına eklendi
+- [x] API key bazlı rate limiting — Rate limit middleware API key'e göre güncellendi
 
 ### Öncelik 3 — İyileştirmeler (5 tane)
 

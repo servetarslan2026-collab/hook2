@@ -38,6 +38,10 @@ func SetupRoutes(app *fiber.App, s *store.Store, authSvc *auth.AuthService, q *q
 	protected.Put("/users/me", userH.UpdateProfile)
 	protected.Put("/users/me/password", userH.UpdatePassword)
 
+	// Email verification
+	protected.Post("/auth/send-verification", authH.SendVerificationEmail)
+	protected.Post("/auth/verify/:token", authH.VerifyEmail)
+
 	// Organizations
 	protected.Post("/organizations", orgH.Create)
 	protected.Get("/organizations", orgH.List)

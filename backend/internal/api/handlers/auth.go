@@ -160,3 +160,54 @@ func (h *AuthHandler) GetCurrentUser(c *fiber.Ctx) error {
 
 	return c.JSON(user)
 }
+
+func (h *AuthHandler) SendVerificationEmail(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(models.ErrorResponse{Error: "Not authenticated"})
+	}
+
+	user, err := h.store.GetUserByID(c.Context(), userID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(models.ErrorResponse{Error: "User not found"})
+	}
+
+	verified, _ := h.store.IsUserVerified(c.Context(), userID)
+	if verified {
+		return c.JSON(models.MessageResponse{Message: "Email already verified"})
+	}
+
+	token, err := h.store.CreateVerificationToken(c.Context(), user.ID, user.Email)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{Error: "Failed to create verification token"})
+	}
+
+	// In production, send email via SMTP/SendGrid/SES
+	// For now, log the token and return it in development
+	_ = token // TODO: send email with verification link
+
+	return c.JSON(fiber.Map{
+		"message": "Verification email sent",
+		"token":   token, // Remove this in production
+	})
+}
+
+func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
+	token := c.Params("token")
+	if token == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Token is required"})
+	}
+
+	userID, _, err := h.store.GetVerificationToken(c.Context(), token)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{Error: "Invalid or expired verification token"})
+	}
+
+	if err := h.store.MarkUserVerified(c.Context(), userID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{Error: "Failed to verify email"})
+	}
+
+	h.store.DeleteVerificationToken(c.Context(), token)
+
+	return c.JSON(models.MessageResponse{Message: "Email verified successfully"})
+}

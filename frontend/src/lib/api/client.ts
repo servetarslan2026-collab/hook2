@@ -33,6 +33,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  email_verified?: boolean;
   created_at: string;
 }
 
@@ -131,6 +132,10 @@ export const authApi = {
     api.post('auth/login', { json: data }).json<{ token: string; refresh_token: string; user: User }>(),
   refresh: (refresh_token: string) =>
     api.post('auth/refresh', { json: { refresh_token } }).json<{ token: string }>(),
+  sendVerification: () =>
+    api.post('auth/send-verification').json<{ message: string; token?: string }>(),
+  verifyEmail: (token: string) =>
+    api.post(`auth/verify/${token}`).json<{ message: string }>(),
 };
 
 export const orgApi = {

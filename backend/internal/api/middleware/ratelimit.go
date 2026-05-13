@@ -12,8 +12,12 @@ import (
 func RateLimitMiddleware(rdb *redis.Client, limit int, window time.Duration) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx := context.Background()
-		ip := c.IP()
-		key := "ratelimit:" + ip
+
+		// Use API key if present, otherwise fall back to IP
+		key := "ratelimit:" + c.Get("X-API-Key")
+		if key == "ratelimit:" {
+			key = "ratelimit:" + c.IP()
+		}
 
 		count, err := rdb.Incr(ctx, key).Result()
 		if err != nil {

@@ -1119,3 +1119,56 @@ func (s *Store) GetAppSuccessRate(ctx context.Context, appID uuid.UUID) (float64
 func joinStrings(strs []string, sep string) string {
 	return strings.Join(strs, sep)
 }
+
+// ==================== Verification Tokens ====================
+
+func (s *Store) CreateVerificationToken(ctx context.Context, userID uuid.UUID, email string) (string, error) {
+	token := "verify_" + uuid.New().String()
+	_, err := s.db.Exec(ctx,
+		`INSERT INTO verification_tokens (id, user_id, token, email, created_at, expires_at)
+		 VALUES ($1, $2, $3, $4, $5, $6)`,
+		uuid.New(), userID, token, email, time.Now(), time.Now().Add(24*time.Hour),
+	)
+	if err != nil {
+		return "", fmt.Errorf("create verification token: %w", err)
+	}
+	return token, nil
+}
+
+func (s *Store) GetVerificationToken(ctx context.Context, token string) (uuid.UUID, string, error) {
+	var userID uuid.UUID
+	var email string
+	err := s.db.QueryRow(ctx,
+		`SELECT user_id, email FROM verification_tokens WHERE token = $1 AND expires_at > NOW()`, token,
+	).Scan(&userID, &email)
+	if err != nil {
+		return uuid.Nil, "", fmt.Errorf("get verification token: %w", err)
+	}
+	return userID, email, nil
+}
+
+func (s *Store) DeleteVerificationToken(ctx context.Context, token string) error {
+	_, err := s.db.Exec(ctx, `DELETE FROM verification_tokens WHERE token = $1`, token)
+	return err
+}
+
+func (s *Store) MarkUserVerified(ctx context.Context, userID uuid.UUID) error {
+	// We'll store verification status in a new column
+	_, err := s.db.Exec(ctx,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
+		 UPDATE users SET email_verified = true, updated_at = $2 WHERE id = $1`,
+		userID, time.Now(),
+	)
+	return err
+}
+
+func (s *Store) IsUserVerified(ctx context.Context, userID uuid.UUID) (bool, error) {
+	// Ensure column exists
+	s.db.Exec(ctx, `ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false`)
+
+	var verified bool
+	err := s.db.QueryRow(ctx,
+		`SELECT email_verified FROM users WHERE id = $1`, userID,
+	).Scan(&verified)
+	return verified, err
+}

@@ -233,6 +233,28 @@ func runMigrations(ctx context.Context, db *pgx.Conn) error {
 	CREATE INDEX IF NOT EXISTS idx_deliveries_sub ON delivery_attempts(subscription_id);
 	CREATE INDEX IF NOT EXISTS idx_deliveries_status ON delivery_attempts(status);
 	CREATE INDEX IF NOT EXISTS idx_deliveries_created ON delivery_attempts(created_at DESC);
+
+	CREATE TABLE IF NOT EXISTS invitations (
+		id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+		organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+		email VARCHAR(255) NOT NULL,
+		role VARCHAR(50) NOT NULL DEFAULT 'member',
+		token VARCHAR(255) UNIQUE NOT NULL,
+		created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+		expires_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() + INTERVAL '7 days'
+	);
+	CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+	CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email);
+
+	CREATE TABLE IF NOT EXISTS verification_tokens (
+		id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		token VARCHAR(255) UNIQUE NOT NULL,
+		email VARCHAR(255) NOT NULL,
+		created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+		expires_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() + INTERVAL '24 hours'
+	);
+	CREATE INDEX IF NOT EXISTS idx_verification_tokens_token ON verification_tokens(token);
 	`
 
 	_, err := db.Exec(ctx, migration)

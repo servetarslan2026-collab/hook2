@@ -15,7 +15,9 @@
       const { authApi } = await import('$lib/api/client');
       const result = await authApi.register({ email, password, name });
       auth.login(result.user, result.token);
-      goto('/');
+      // Auto-send verification email
+      authApi.sendVerification().catch(() => {});
+      goto('/verify');
     } catch (e: any) {
       error = e.message || 'Registration failed';
     } finally {
