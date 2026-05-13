@@ -10,8 +10,8 @@
 
 ```bash
 # 1. Klonla
-git clone https://github.com/servetarslan02/depo.git
-cd depo
+git clone https://github.com/servetarslan2026-collab/hook2.git
+cd hook2
 
 # 2. Başlat (ilk seferde 2-3 dakika sürer)
 docker-compose up --build

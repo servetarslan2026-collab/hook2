@@ -12,8 +12,8 @@ Webhook-as-a-Service platformu — Go + Svelte ile sıfırdan inşa edildi.
 
 ```bash
 # 1. Repoyu klonla
-git clone https://github.com/servetarslan02/depo.git
-cd depo
+git clone https://github.com/servetarslan2026-collab/hook2.git
+cd hook2
 
 # 2. Tüm servisleri başlat (ilk seferde birkaç dakika sürer)
 docker-compose up --build
