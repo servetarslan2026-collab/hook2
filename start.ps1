@@ -1,52 +1,6 @@
 #!/usr/bin/env powershell
-# Jarvis baslatici - YAML dosyasini dogru sekilde olusturur
-$yaml = @"
-# JARVIS - Windows 11 AI Asistan
-# Ollama + qwen3.6:35b
-
-models:
-  jarvis:
-    provider: ollama
-    model: qwen3.6:35b
-    max_tokens: 32768
-
-agents:
-  root:
-    model: jarvis
-    name: Jarvis
-    description: Kisilisel AI asistan
-    max_iterations: 100
-    add_environment_info: true
-    instruction: |
-      Sen Jarvis'sin. Turkce konus, net ve kisa ol.
-      Windows 11 PowerShell kullan, Linux komutlari KULLANMA.
-      Dosya: Get-ChildItem / dir
-      Okuma: Get-Content / type
-      Arama: Select-String / findstr
-      Kopyala: Copy-Item
-      Sil: Remove-Item
-      Dizin: New-Item -ItemType Directory -Force
-      Process: Get-Process / Stop-Process
-      Path separator: \
-    toolsets:
-      - type: filesystem
-        ignore_vcs: true
-      - type: shell
-        timeout: 300
-      - type: git
-      - type: think
-      - type: todo
-      - type: memory
-        path: ./jarvis_memory.db
-      - type: scheduler
-      - type: fetch
-        timeout: 60
-      - type: background_jobs
-      - type: session_plan
-      - type: user_prompt
-"@
-# UTF-8 without BOM
-$utf8 = New-Object System.Text.UTF8Encoding $false
-[System.IO.File]::WriteAllText("jarvis.yaml", $yaml, $utf8)
+# Jarvis baslatici
+$base64 = "IyBKQVJWSVMgLSBXaW5kb3dzIDExIEFJIEFzaXN0YW4KIyBPbGxhbWEgKyBxd2VuMy42OjM1YgoKbW9kZWxzOgogIGphcnZpczoKICAgIHByb3ZpZGVyOiBvbGxhbWEKICAgIG1vZGVsOiBxd2VuMy42OjM1YgogICAgbWF4X3Rva2VuczogMzI3NjgKCmFnZW50czoKICByb290OgogICAgbW9kZWw6IGphcnZpcwogICAgbmFtZTogSmFydmlzCiAgICBkZXNjcmlwdGlvbjogS2lzaWxpc2VsIEFJIGFzaXN0YW4KICAgIG1heF9pdGVyYXRpb25zOiAxMDAKICAgIGFkZF9lbnZpcm9ubWVudF9pbmZvOiB0cnVlCiAgICBpbnN0cnVjdGlvbjogfAogICAgICBTZW4gSmFydmlzJ3Npbi4gVHVya2NlIGtvbnVzLCBuZXQgdmUga2lzYSBvbC4KICAgICAgV2luZG93cyAxMSBQb3dlclNoZWxsIGt1bGxhbiwgTGludXgga29tdXRsYXJpIEtVTExBTk1BLgogICAgICBEb3N5YTogR2V0LUNoaWxkSXRlbSAvIGRpcgogICAgICBPa3VtYTogR2V0LUNvbnRlbnQgLyB0eXBlCiAgICAgIEFyYW1hOiBTZWxlY3QtU3RyaW5nIC8gZmluZHN0cgogICAgICBLb3B5YWxhOiBDb3B5LUl0ZW0KICAgICAgU2lsOiBSZW1vdmUtSXRlbQogICAgICBEaXppbjogTmV3LUl0ZW0gLUl0ZW1UeXBlIERpcmVjdG9yeSAtRm9yY2UKICAgICAgUHJvY2VzczogR2V0LVByb2Nlc3MgLyBTdG9wLVByb2Nlc3MKICAgICAgUGF0aCBzZXBhcmF0b3I6IFwKICAgIHRvb2xzZXRzOgogICAgICAtIHR5cGU6IGZpbGVzeXN0ZW0KICAgICAgICBpZ25vcmVfdmNzOiB0cnVlCiAgICAgIC0gdHlwZTogc2hlbGwKICAgICAgICB0aW1lb3V0OiAzMDAKICAgICAgLSB0eXBlOiBnaXQKICAgICAgLSB0eXBlOiB0aGluawogICAgICAtIHR5cGU6IHRvZG8KICAgICAgLSB0eXBlOiBtZW1vcnkKICAgICAgICBwYXRoOiAuL2phcnZpc19tZW1vcnkuZGIKICAgICAgLSB0eXBlOiBzY2hlZHVsZXIKICAgICAgLSB0eXBlOiBmZXRjaAogICAgICAgIHRpbWVvdXQ6IDYwCiAgICAgIC0gdHlwZTogYmFja2dyb3VuZF9qb2JzCiAgICAgIC0gdHlwZTogc2Vzc2lvbl9wbGFuCiAgICAgIC0gdHlwZTogdXNlcl9wcm9tcHQK"
+[System.IO.File]::WriteAllBytes("jarvis.yaml", [Convert]::FromBase64String($base64))
 Write-Host "jarvis.yaml olusturuldu" -ForegroundColor Green
 docker agent run jarvis.yaml --yolo
