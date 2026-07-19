@@ -1,6 +1,5 @@
 # JARVIS - Windows 11 AI Asistan
 # Ollama + qwen3.6:35b
-# Kullanım: docker agent run jarvis.yaml --yolo
 
 models:
   jarvis:
@@ -25,9 +24,7 @@ agents:
       Sil: Remove-Item
       Dizin: New-Item -ItemType Directory -Force
       Process: Get-Process / Stop-Process
-      Servis: Get-Service / Start-Service / Stop-Service
       Path separator: \
-      Uzun islemlerde timeout: 300+
     toolsets:
       - type: filesystem
         ignore_vcs: true
@@ -42,14 +39,5 @@ agents:
       - type: fetch
         timeout: 60
       - type: background_jobs
-        recall: true
       - type: session_plan
       - type: user_prompt
-      - type: mcp
-        ref: docker:duckduckgo
-      - type: mcp
-        command: npx
-        args:
-          - "-y"
-          - "@playwright/mcp"
-        defer: true

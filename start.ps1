@@ -42,7 +42,6 @@ agents:
       - type: fetch
         timeout: 60
       - type: background_jobs
-        recall: true
       - type: session_plan
       - type: user_prompt
 "@
