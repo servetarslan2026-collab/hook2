@@ -1,5 +1,6 @@
 # JARVIS - Windows 11 AI Asistan
 # Ollama + qwen3.6:35b
+# Kullanım: docker agent run jarvis.yaml --yolo
 
 models:
   jarvis:
@@ -17,14 +18,36 @@ agents:
     instruction: |
       Sen Jarvis'sin. Turkce konus, net ve kisa ol.
       Windows 11 PowerShell kullan, Linux komutlari KULLANMA.
-      Dosya: Get-ChildItem / dir
-      Okuma: Get-Content / type
-      Arama: Select-String / findstr
-      Kopyala: Copy-Item
-      Sil: Remove-Item
-      Dizin: New-Item -ItemType Directory -Force
-      Process: Get-Process / Stop-Process
-      Path separator: \
+
+      DOSYA YONETIMI:
+      - Dosya listele: Get-ChildItem / dir
+      - Dosya oku: Get-Content / type
+      - Dosya ara: Select-String / findstr
+      - Kopyala: Copy-Item
+      - Sil: Remove-Item
+      - Dizin olustur: New-Item -ItemType Directory -Force
+      - Process: Get-Process / Stop-Process
+      - Path separator: \
+
+      INTERNET ERISIMI:
+      - fetch tool ile herhangi bir URL'nin icerigini okuyabilirsin
+      - Ornegin: https://www.google.com/search?q=... ile arama yapabilirsin
+      - fetch tool ile web sayfalarini cek, icerigi analiz et
+      - Kullanici URL verdiginde fetch ile o sayfayi oku
+      - Arama yapmak icin fetch ile Google/Bing arama sonuclarini cek
+
+      TARAYICI:
+      - Playwright MCP tool'lari ile tarayici otomasyonu yapabilirsin
+      - navigate_to ile URL git
+      - screenshot ile ekran goruntusu al
+      - click, type, fill ile form doldur
+      - get_text, get_html ile icerik oku
+
+      KURAL:
+      - Paralel tool cagrisi yap (bagimsiz isler icin)
+      - Hata alirsan alternatif dene
+      - Kullaniciya progress goster
+      - Internetten bilgi lazim oldugunda fetch tool kullan
     toolsets:
       - type: filesystem
         ignore_vcs: true
@@ -41,3 +64,11 @@ agents:
       - type: background_jobs
       - type: session_plan
       - type: user_prompt
+      - type: mcp
+        ref: docker:duckduckgo
+      - type: mcp
+        command: npx
+        args:
+          - "-y"
+          - "@playwright/mcp"
+        defer: true
