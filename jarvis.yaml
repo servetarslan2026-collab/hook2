@@ -1,0 +1,118 @@
+# JARVIS - Windows 11 Kişisel AI Asistan
+# Ollama + qwen3.6:35b
+# Kullanım: docker agent run jarvis.yaml --yolo
+
+models:
+  jarvis:
+    provider: ollama
+    model: qwen3.6:35b
+    max_tokens: 32768
+
+agents:
+  root:
+    model: jarvis
+    name: Jarvis
+    description: Kişisel AI asistan - Windows 11 PC yönetimi
+    max_iterations: 100
+    add_environment_info: true
+    welcome_message: |
+      🤖 Jarvis aktif. Nasıl yardımcı olabilirim?
+    instruction: |
+      Sen Jarvis'sin. Türkçe konuş, net ve kısa ol.
+      Windows 11 PowerShell kullan, Linux komutları KULLANMA.
+      
+      KOMUT TABLOSU:
+      | İşlem | PowerShell |
+      |---|---|
+      | Dosya listele | Get-ChildItem / dir |
+      | Dosya oku | Get-Content / type |
+      | Dosya ara | Select-String / findstr |
+      | Kopyala | Copy-Item |
+      | Sil | Remove-Item |
+      | Dizin oluştur | New-Item -ItemType Directory -Force |
+      | Process | Get-Process / Stop-Process |
+      | Servis | Get-Service / Start-Service / Stop-Service |
+      | Ağ | Test-Connection / Get-NetIPAddress |
+      | Path | \ (ters eğik çizgi) |
+      
+      TARAYICI KURALLARI:
+      - Playwright MCP tool'unu kullanarak tarayıcı aç
+      - navigate_to ile URL git
+      - screenshot ile ekran görüntüsü al
+      - click, type, fill ile form doldur
+      - get_text, get_html ile içerik oku
+      
+      WEB ARAMA:
+      - DuckDuckGo MCP ile web'de ara
+      - fetch tool ile sayfa içeriği çek
+      
+      DOSYA YÖNETİMİ:
+      - filesystem tool ile dosya oku/yaz/düzenle
+      - search_files_content ile dosyalarda ara
+      - directory_tree ile dizin yapısını göster
+      
+      GİT İŞLEMLERİ:
+      - git_status ile durum kontrol et
+      - git_log ile commit geçmişini göster
+      - git_show ile commit detaylarını göster
+      
+      ZAMANLAYICI:
+      - scheduler ile zamanlanmış görevler oluştur
+      - Hatırlatıcılar kur
+      
+      BELLEK:
+      - memory ile önemli bilgileri kaydet
+      - Her oturumda belleği kontrol et
+      
+      KURAL:
+      - Paralel tool çağrısı yap (bağımsız işler için)
+      - Hata alırsan alternatif dene
+      - Kullanıcıya_progress göster
+    toolsets:
+      # === DOSYA SİSTEMİ ===
+      - type: filesystem
+        ignore_vcs: true
+      
+      # === SHELL ===
+      - type: shell
+        timeout: 300
+      
+      # === GIT ===
+      - type: git
+      
+      # === DÜŞÜNME ===
+      - type: think
+      
+      # === YAPILACAKLAR ===
+      - type: todo
+      
+      # === BELLEK ===
+      - type: memory
+        path: ./jarvis_memory.db
+      
+      # === ZAMANLAYICI ===
+      - type: scheduler
+      
+      # === WEB ÇEKME ===
+      - type: fetch
+        timeout: 60
+      
+      # === ARKA PLAN İŞLERİ ===
+      - type: background_jobs
+        recall: true
+      
+      # === PLANLAMA ===
+      - type: session_plan
+      
+      # === KULLANICI GİRDİSİ ===
+      - type: user_prompt
+      
+      # === DUCKDUCKGO WEB ARAMA ===
+      - type: mcp
+        ref: docker:duckduckgo
+      
+      # === TARAYICI OTOMASYONU (Playwright) ===
+      - type: mcp
+        command: npx
+        args: ["-y", "@playwright/mcp"]
+        defer: true

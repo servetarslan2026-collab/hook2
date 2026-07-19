@@ -1,0 +1,27 @@
+# ============================================================
+#  JARVIS Timeout Patch - docker-agent v1.111.0
+# ============================================================
+#  Bu patch, hardcoded 5 dakikalık stream idle timeout'u
+#  kaldırır (24 saat yapar).
+#
+#  Uygulama:
+#    cd docker-agent
+#    git apply jarvis-timeout-patch.diff
+#    task build
+#
+#  Derlenmiş binary: ./bin/docker-agent
+# ============================================================
+
+diff --git a/pkg/runtime/streaming.go b/pkg/runtime/streaming.go
+index 1234567..abcdefg 100644
+--- a/pkg/runtime/streaming.go
++++ b/pkg/runtime/streaming.go
+@@ -29,7 +29,7 @@ import (
+ // handleStream takes the idle timeout as a parameter rather than reading this
+ // constant directly, so tests can pass a short timeout without mutating shared
+ // state (and can therefore run in parallel).
+-const defaultStreamIdleTimeout = 5 * time.Minute
++const defaultStreamIdleTimeout = 24 * time.Hour  // Jarvis: timeout yok
+ 
+ // errStreamIdle is the sentinel error returned when the upstream model stream
+ // produces no SSE events for longer than defaultStreamIdleTimeout. It does
